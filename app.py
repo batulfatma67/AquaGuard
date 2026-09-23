@@ -17,6 +17,8 @@ from engine.water_engine import (
     compare_scenarios,
 )
 
+from rag.pipeline import build_knowledge_base, ask_rag, get_store_info
+
 # ============================================================
 # BASIC CONFIGURATION
 # ============================================================
@@ -437,6 +439,9 @@ with st.sidebar:
 
         "📄  Reports":
             "Reports",
+
+        "📚  Document RAG":
+            "Document RAG",
     }
 
 
@@ -1582,7 +1587,178 @@ elif page == "What-If Scenarios":
 
 
 # ============================================================
-# PAGE 7 — REPORTS
+# PAGE 7 — DOCUMENT RAG
+# ============================================================
+
+elif page == "Document RAG":
+
+    st.title("📚 Document RAG")
+    st.caption(
+        "Upload PDF documents, build a local FAISS knowledge base, "
+        "and ask questions using retrieval-augmented generation."
+    )
+
+    st.html(
+        """
+        <div class="callout">
+            <b>How it works</b>
+            <p style="margin:8px 0 0;">
+                PDF extraction → text cleaning → overlapping chunks →
+                local sentence-transformer embeddings → FAISS retrieval →
+                Groq LLM answer with source/page references.
+            </p>
+        </div>
+        """
+    )
+
+    left, right = st.columns([1.15, 1])
+
+    with left:
+        st.subheader("1. Build Knowledge Base")
+
+        uploaded_files = st.file_uploader(
+            "Upload one or more PDF documents",
+            type=["pdf"],
+            accept_multiple_files=True,
+            help="Text-based PDFs are supported. Scanned/image-only PDFs require OCR.",
+        )
+
+        chunk_size = st.slider(
+            "Chunk size (characters)",
+            min_value=400,
+            max_value=1800,
+            value=900,
+            step=100,
+        )
+
+        chunk_overlap = st.slider(
+            "Chunk overlap (characters)",
+            min_value=50,
+            max_value=400,
+            value=150,
+            step=25,
+        )
+
+        top_k = st.slider(
+            "Retrieved chunks per question",
+            min_value=2,
+            max_value=8,
+            value=4,
+        )
+
+        if st.button(
+            "🔨 Build / Replace Knowledge Base",
+            type="primary",
+            use_container_width=True,
+        ):
+            if not uploaded_files:
+                st.warning("Please upload at least one PDF.")
+            elif chunk_overlap >= chunk_size:
+                st.error("Chunk overlap must be smaller than chunk size.")
+            else:
+                with st.spinner(
+                    "Extracting PDFs, creating chunks, embedding text, and building FAISS..."
+                ):
+                    try:
+                        info = build_knowledge_base(
+                            uploaded_files,
+                            chunk_size=chunk_size,
+                            chunk_overlap=chunk_overlap,
+                        )
+                        st.session_state["rag_store_info"] = info
+                        st.session_state["rag_messages"] = []
+                        st.success(
+                            f"Knowledge base ready: {info['documents']} document(s), "
+                            f"{info['chunks']} chunk(s)."
+                        )
+                    except Exception as exc:
+                        st.error(f"Knowledge-base build failed: {exc}")
+
+    with right:
+        st.subheader("Knowledge Base Status")
+
+        try:
+            info = get_store_info()
+        except Exception:
+            info = None
+
+        if info:
+            st.metric("Documents", info.get("documents", 0))
+            st.metric("Indexed chunks", info.get("chunks", 0))
+            st.caption(
+                f"Embedding model: {info.get('embedding_model', 'N/A')}"
+            )
+            st.caption(
+                f"Vector dimension: {info.get('dimension', 'N/A')}"
+            )
+        else:
+            st.info(
+                "No FAISS knowledge base found yet. "
+                "Upload PDFs and click Build / Replace Knowledge Base."
+            )
+
+        st.markdown("### API configuration")
+        st.caption(
+            "The Groq API key is read from GROQ_API_KEY. "
+            "Do not hard-code the key in app.py or commit it to GitHub."
+        )
+
+    st.divider()
+
+    st.subheader("2. Ask Your Documents")
+
+    if "rag_messages" not in st.session_state:
+        st.session_state["rag_messages"] = []
+
+    for message in st.session_state["rag_messages"]:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    question = st.chat_input(
+        "Ask a question about the uploaded documents..."
+    )
+
+    if question:
+        st.session_state["rag_messages"].append(
+            {"role": "user", "content": question}
+        )
+
+        with st.chat_message("user"):
+            st.markdown(question)
+
+        with st.chat_message("assistant"):
+            with st.spinner("Retrieving relevant passages and generating answer..."):
+                try:
+                    answer, sources = ask_rag(
+                        question,
+                        top_k=top_k,
+                    )
+
+                    st.markdown(answer)
+
+                    if sources:
+                        with st.expander("📌 Retrieved sources"):
+                            for source in sources:
+                                st.markdown(
+                                    f"- **{source['source']}**, "
+                                    f"page {source['page']} "
+                                    f"(similarity: {source['score']:.3f})"
+                                )
+
+                    st.session_state["rag_messages"].append(
+                        {"role": "assistant", "content": answer}
+                    )
+
+                except Exception as exc:
+                    error_message = f"RAG query failed: {exc}"
+                    st.error(error_message)
+                    st.session_state["rag_messages"].append(
+                        {"role": "assistant", "content": error_message}
+                    )
+
+
+# ============================================================
+# PAGE 8 — REPORTS
 # ============================================================
 
 elif page == "Reports":
