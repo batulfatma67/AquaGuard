@@ -17,6 +17,20 @@ from engine.water_engine import (
     compare_scenarios,
 )
 
+st.html(
+    """
+    <div style="
+        background:#082A4A;
+        color:white;
+        padding:30px;
+        border-radius:15px;
+        text-align:center;
+    ">
+        <h1>AquaGuard AI</h1>
+        <p>HTML rendering test successful.</p>
+    </div>
+    """
+)
 
 # ============================================================
 # BASIC CONFIGURATION
