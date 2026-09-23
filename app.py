@@ -17,21 +17,6 @@ from engine.water_engine import (
     compare_scenarios,
 )
 
-st.html(
-    """
-    <div style="
-        background:#082A4A;
-        color:white;
-        padding:30px;
-        border-radius:15px;
-        text-align:center;
-    ">
-        <h1>AquaGuard AI</h1>
-        <p>HTML rendering test successful.</p>
-    </div>
-    """
-)
-
 # ============================================================
 # BASIC CONFIGURATION
 # ============================================================
@@ -81,7 +66,7 @@ bg_uri = file_to_data_uri(BG_PATH)
 # CUSTOM CSS
 # ============================================================
 
-st.markdown(
+st.html(
     f"""
     <style>
 
@@ -369,8 +354,7 @@ st.markdown(
     }}
 
     </style>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 
@@ -414,7 +398,7 @@ if "calculation" not in st.session_state:
 
 with st.sidebar:
 
-    st.markdown(
+    st.html(
         """
         <div class="brand">
 
@@ -427,8 +411,7 @@ with st.sidebar:
             </div>
 
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 
@@ -554,7 +537,7 @@ def metric_card(
     css_class=""
 ):
 
-    st.markdown(
+    st.html(
 
         f"""
         <div class="card {css_class}">
@@ -572,9 +555,7 @@ def metric_card(
             </div>
 
         </div>
-        """,
-
-        unsafe_allow_html=True,
+        """
     )
 
 
@@ -584,7 +565,7 @@ def metric_card(
 
 if page == "Overview":
 
-    st.markdown(
+    st.html(
 
         """
         <div class="hero">
@@ -601,9 +582,7 @@ if page == "Overview":
             </p>
 
         </div>
-        """,
-
-        unsafe_allow_html=True,
+        """
     )
 
 
@@ -658,11 +637,10 @@ if page == "Overview":
         )
 
 
-    st.markdown(
+    st.html(
         '<div class="section-title">'
         'Farm Water Snapshot'
-        '</div>',
-        unsafe_allow_html=True,
+        '</div>'
     )
 
 
@@ -707,9 +685,8 @@ if page == "Overview":
         ).set_index("Day")
 
 
-        st.markdown(
-            '<div class="card">',
-            unsafe_allow_html=True,
+        st.html(
+            '<div class="card">'
         )
 
         st.markdown(
@@ -723,15 +700,14 @@ if page == "Overview":
 
         st.line_chart(chart)
 
-        st.markdown(
-            '</div>',
-            unsafe_allow_html=True,
+        st.html(
+            '</div>'
         )
 
 
     with right:
 
-        st.markdown(
+        st.html(
 
             f"""
             <div class="card">
@@ -757,16 +733,14 @@ if page == "Overview":
                 </span>
 
             </div>
-            """,
-
-            unsafe_allow_html=True,
+            """
         )
 
 
         st.markdown("")
 
 
-        st.markdown(
+        st.html(
 
             """
             <div class="recommendation">
@@ -787,17 +761,14 @@ if page == "Overview":
                 </p>
 
             </div>
-            """,
-
-            unsafe_allow_html=True,
+            """
         )
 
 
-    st.markdown(
+    st.html(
         '<div class="section-title">'
         'Quick Actions'
-        '</div>',
-        unsafe_allow_html=True,
+        '</div>'
     )
 
 
@@ -1094,7 +1065,7 @@ elif page == "Farm Intelligence":
 
     with left:
 
-        st.markdown(
+        st.html(
 
             """
             <div class="card">
@@ -1114,9 +1085,7 @@ elif page == "Farm Intelligence":
                 </p>
 
             </div>
-            """,
-
-            unsafe_allow_html=True,
+            """
         )
 
 
@@ -1154,7 +1123,7 @@ elif page == "Farm Intelligence":
 
     with right:
 
-        st.markdown(
+        st.html(
 
             """
             <div class="callout">
@@ -1175,9 +1144,7 @@ elif page == "Farm Intelligence":
                 </p>
 
             </div>
-            """,
-
-            unsafe_allow_html=True,
+            """
         )
 
 
@@ -1410,7 +1377,7 @@ elif page == "AquaGuard Decision":
     )
 
 
-    st.markdown(
+    st.html(
 
         f"""
         <div class="recommendation">
@@ -1450,9 +1417,7 @@ elif page == "AquaGuard Decision":
             </p>
 
         </div>
-        """,
-
-        unsafe_allow_html=True,
+        """
     )
 
 
@@ -1637,7 +1602,7 @@ elif page == "Reports":
     f = st.session_state.farm
 
 
-    st.markdown(
+    st.html(
 
         f"""
         <div class="card">
@@ -1737,9 +1702,7 @@ elif page == "Reports":
             </p>
 
         </div>
-        """,
-
-        unsafe_allow_html=True,
+        """
     )
 
 
