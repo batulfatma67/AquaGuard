@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local databases
+database/*.db
+
+# Local RAG vector store (do not commit user documents/embeddings)
+data/rag_store/
+
