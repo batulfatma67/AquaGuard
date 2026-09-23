@@ -1,0 +1,5 @@
+soil_type,field_capacity,wilting_point,root_zone_depth_m
+Sandy Loam,0.20,0.09,0.60
+Loam,0.27,0.12,0.80
+Clay Loam,0.31,0.17,0.80
+Clay,0.36,0.21,0.70
