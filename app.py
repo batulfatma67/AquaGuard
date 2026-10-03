@@ -60,7 +60,7 @@ def file_to_data_uri(path: Path) -> str:
 
     return f"data:{mime};base64,{encoded}"
 
-
+#Convert the background asset into a browser-compatible data URI
 bg_uri = file_to_data_uri(BG_PATH)
 
 
