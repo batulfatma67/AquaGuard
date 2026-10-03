@@ -1,0 +1,84 @@
+{
+  "Punjab": {
+    "Attock": ["Attock", "Fateh Jang", "Hassan Abdal", "Hazro", "Jand", "Pindi Gheb"],
+    "Bahawalnagar": ["Bahawalnagar", "Chishtian", "Fort Abbas", "Haroonabad", "Minchinabad"],
+    "Bahawalpur": ["Ahmadpur East", "Bahawalpur City", "Bahawalpur Saddar", "Hasilpur", "Khairpur Tamewali", "Yazman"],
+    "Bhakkar": ["Bhakkar", "Darya Khan", "Kallur Kot", "Mankera"],
+    "Chakwal": ["Chakwal", "Choa Saidan Shah", "Kallar Kahar", "Lawa", "Talagang"],
+    "Chiniot": ["Bhawana", "Chiniot", "Lalian"],
+    "Dera Ghazi Khan": ["Dera Ghazi Khan", "Kot Chutta", "Taunsa"],
+    "Faisalabad": ["Chak Jhumra", "Faisalabad City", "Faisalabad Saddar", "Jaranwala", "Samundri", "Tandlianwala"],
+    "Gujranwala": ["Gujranwala City", "Gujranwala Saddar", "Kamoke", "Nowshera Virkan", "Wazirabad"],
+    "Gujrat": ["Gujrat", "Kharian", "Sarai Alamgir"],
+    "Hafizabad": ["Hafizabad", "Pindi Bhattian"],
+    "Jhang": ["Ahmedpur Sial", "Athara Hazari", "Jhang", "Shorkot"],
+    "Jhelum": ["Dina", "Jhelum", "Pind Dadan Khan", "Sohawa"],
+    "Kasur": ["Chunian", "Kasur", "Kot Radha Kishan", "Pattoki"],
+    "Khanewal": ["Jahanian", "Kabirwala", "Khanewal", "Mian Channu"],
+    "Khushab": ["Khushab", "Naushera", "Noorpur Thal", "Quaidabad"],
+    "Lahore": ["Allama Iqbal Town", "Aziz Bhatti", "Data Gunj Bakhsh", "Lahore Cantt", "Lahore City", "Model Town", "Raiwind", "Samanabad", "Shalimar"],
+    "Layyah": ["Chaubara", "Karor Lal Esan", "Layyah"],
+    "Lodhran": ["Dunyapur", "Kahror Pakka", "Lodhran"],
+    "Mandi Bahauddin": ["Malakwal", "Mandi Bahauddin", "Phalia"],
+    "Mianwali": ["Isakhel", "Mianwali", "Piplan"],
+    "Multan": ["Jalalpur Pirwala", "Multan City", "Multan Saddar", "Shujabad"],
+    "Muzaffargarh": ["Alipur", "Jatoi", "Kot Addu", "Muzaffargarh"],
+    "Nankana Sahib": ["Nankana Sahib", "Sangla Hill", "Shahkot"],
+    "Narowal": ["Narowal", "Shakargarh", "Zafarwal"],
+    "Okara": ["Depalpur", "Okara", "Renala Khurd"],
+    "Pakpattan": ["Arifwala", "Pakpattan"],
+    "Rahim Yar Khan": ["Khanpur", "Liaquatpur", "Rahim Yar Khan", "Sadiqabad"],
+    "Rajanpur": ["Jampur", "Rajanpur", "Rojhan"],
+    "Rawalpindi": ["Gujar Khan", "Kahuta", "Kallar Syedan", "Kotli Sattian", "Murree", "Rawalpindi", "Taxila"],
+    "Sahiwal": ["Chichawatni", "Sahiwal"],
+    "Sargodha": ["Bhalwal", "Bhera", "Kot Momin", "Sahiwal", "Sargodha", "Shahpur", "Sillanwali"],
+    "Sheikhupura": ["Ferozewala", "Muridke", "Safdarabad", "Sharaqpur Sharif", "Sheikhupura"],
+    "Sialkot": ["Daska", "Pasrur", "Sambrial", "Sialkot"],
+    "Toba Tek Singh": ["Gojra", "Kamalia", "Pir Mahal", "Toba Tek Singh"],
+    "Vehari": ["Burewala", "Mailsi", "Vehari"]
+  },
+  "Sindh": {
+    "Badin": [], "Dadu": [], "Ghotki": [],
+    "Hyderabad": ["Hyderabad City", "Hyderabad Rural", "Latifabad", "Qasimabad"],
+    "Jacobabad": [], "Jamshoro": [], "Kambar Shahdadkot": [], "Kashmore": [],
+    "Karachi Central": [], "Karachi East": [], "Karachi South": [], "Karachi West": [],
+    "Keamari": [], "Korangi": [], "Malir": [], "Khairpur": [],
+    "Larkana": ["Bakrani", "Batri", "Dokri", "Larkana", "Ratodero"],
+    "Matiari": [],
+    "Mirpur Khas": ["Digri", "Hussain Bux Mari", "Jhuddo", "Kot Ghulam Muhammad", "Mirpur Khas"],
+    "Naushahro Feroze": [], "Sanghar": [], "Shaheed Benazirabad": [], "Shikarpur": [],
+    "Sujawal": [],
+    "Sukkur": ["New Sukkur", "Pano Aqil", "Rohri", "Salehpat", "Sukkur"],
+    "Tando Allahyar": [], "Tando Muhammad Khan": [], "Tharparkar": [], "Thatta": [], "Umerkot": []
+  },
+  "Khyber Pakhtunkhwa": {
+    "Abbottabad": [], "Bajaur": [], "Bannu": [], "Battagram": [], "Buner": [], "Charsadda": [],
+    "Chitral Lower": [], "Chitral Upper": [], "Dera Ismail Khan": [], "Hangu": [], "Haripur": [],
+    "Karak": [], "Khyber": [], "Kohat": [], "Kohistan Lower": [], "Kohistan Upper": [], "Kurram": [],
+    "Lakki Marwat": [], "Lower Dir": [], "Malakand": [], "Mansehra": [],
+    "Mardan": ["Katlang", "Mardan", "Takht Bhai"],
+    "Mohmand": [], "North Waziristan": [], "Nowshera": [], "Orakzai": [], "Peshawar": [],
+    "Shangla": [], "South Waziristan": [],
+    "Swabi": ["Lahor", "Razzar", "Swabi", "Topi"],
+    "Swat": [], "Tank": [], "Torghar": [], "Upper Dir": []
+  },
+  "Balochistan": {
+    "Awaran": [], "Barkhan": [], "Chagai": [], "Dera Bugti": [], "Duki": [], "Gwadar": [], "Harnai": [],
+    "Hub": [], "Jaffarabad": [], "Jhal Magsi": [], "Kachhi": [], "Kalat": [], "Kech": [], "Kharan": [],
+    "Khuzdar": [], "Killa Abdullah": [], "Killa Saifullah": [], "Kohlu": [], "Lasbela": [], "Loralai": [],
+    "Mastung": [], "Musakhel": [], "Nasirabad": [], "Nushki": [], "Panjgur": [], "Pishin": [],
+    "Quetta": [], "Sherani": [], "Sibi": [], "Surab": [], "Usta Muhammad": [], "Washuk": [],
+    "Zhob": [], "Ziarat": []
+  },
+  "Islamabad Capital Territory": {
+    "Islamabad": []
+  },
+  "Azad Jammu & Kashmir": {
+    "Bagh": [], "Bhimber": [], "Haveli": [], "Hattian Bala": [], "Kotli": [], "Mirpur": [],
+    "Muzaffarabad": [], "Neelum": [], "Poonch": [], "Sudhnoti": []
+  },
+  "Gilgit-Baltistan": {
+    "Astore": [], "Diamer": [], "Ghanche": [], "Ghizer": [], "Gilgit": [], "Hunza": [],
+    "Kharmang": [], "Nagar": [], "Shigar": [], "Skardu": []
+  }
+}

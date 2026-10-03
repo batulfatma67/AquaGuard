@@ -31,27 +31,40 @@ def build_knowledge_base(
         except Exception as exc:
             errors.append(f"{uploaded_file.name}: {exc}")
 
-    if errors:
-        error_text = "\n".join(f"- {item}" for item in errors)
-        raise ValueError(
-            "One or more PDFs could not be processed:\n" + error_text
-        )
-
     if not all_chunks:
-        raise ValueError("No text chunks were created from the uploaded PDFs.")
+        raise ValueError(
+            "No text chunks were created from the uploaded PDFs.\n"
+            + "\n".join(f"- {item}" for item in errors)
+        )
 
     embeddings = embed_texts([chunk["text"] for chunk in all_chunks])
 
     info = build_faiss_index(all_chunks, embeddings)
+    info["skipped"] = errors
     return info
 
 
-def ask_rag(question: str, top_k: int = 4) -> tuple[str, list[dict]]:
+NOT_FOUND_MESSAGE = (
+    "I could not find enough information in the uploaded documents to answer that."
+)
+
+# Cosine similarity below this is treated as "not in the knowledge base".
+MIN_RELEVANCE = 0.25
+
+
+def ask_rag(
+    question: str,
+    top_k: int = 4,
+    min_score: float = MIN_RELEVANCE,
+) -> tuple[str, list[dict]]:
     """Retrieve relevant chunks and generate a grounded Groq answer."""
-    results = search(question, top_k=top_k)
+    if not question.strip():
+        raise ValueError("Please enter a question.")
+
+    results = [r for r in search(question, top_k=top_k) if r["score"] >= min_score]
 
     if not results:
-        raise ValueError("No relevant document passages were retrieved.")
+        return NOT_FOUND_MESSAGE, []
 
     context_parts = []
 
