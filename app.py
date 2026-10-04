@@ -1,12 +1,10 @@
-from database.db import (
-init_db,from __future__ import annotations
-
-from datetime import date, timedelta
-from pathlib import Path
 import html
 import pandas as pd
 import streamlit as st
+from datetime import date, timedelta
+from pathlib import Path
 
+from __future__ import annotations
 from database.db import init_db, save_farm, save_water_account, fetch_recent_accounts
 from engine.water_engine import calculate_water_account, compare_scenarios
 from rag.pipeline import build_knowledge_base, ask_rag, get_store_info
