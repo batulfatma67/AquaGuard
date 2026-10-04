@@ -10,31 +10,17 @@ PDF upload → PyMuPDF text extraction → page-aware overlapping chunks → Sen
 ## Project structure
 
 ```text
-AquaGuard_RAG/
-├── app.py
-├── requirements.txt
-├── .python-version
-├── .gitignore
-├── .streamlit/
-│   └── secrets.toml.example
-├── rag/
-│   ├── pdf_loader.py
-│   ├── chunker.py
-│   ├── embeddings.py
-│   ├── vector_store.py
-│   ├── groq_client.py
-│   └── pipeline.py
-├── data/
-│   ├── crops.csv
-│   ├── soils.csv
-│   └── rag_store/          # created/updated at runtime; do not commit its contents
-├── database/
-│   └── db.py
-├── engine/
-│   └── water_engine.py
-└── assets/
+app.py                  # thin entrypoint: styles, sidebar navigation, page routing
+config.py               # paths, option lists, default input assumptions
+ui/                     # styles.py, state.py, components.py, pages/ (one module per page)
+engine/                 # water_engine.py (account), scenario_engine.py, reference_data.py
+rag/                    # pdf_loader, chunker, embeddings, vector_store, groq_client, pipeline
+agent/agent_router.py   # experimental tool router (calculate / compare / search / report)
+services/report_service.py
+database/db.py          # SQLite: farms, water_accounts, scenarios, reports (auto-migrates)
+data/                   # crops.csv, soils.csv, rag_store/ (runtime, not committed)
+tests/                  # python -m unittest discover -s tests -t .
 ```
-
 ## Local setup
 
 1. Create a virtual environment with Python 3.11.
