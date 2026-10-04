@@ -17,7 +17,7 @@ from engine.water_engine import (
     compare_scenarios,
 )
 
-from rag.pipeline import build_knowledge_base, ask_rag, get_store_info
+from rag.pipeline import build_knowledge_base, ask_rag
 
 # ============================================================
 # BASIC CONFIGURATION

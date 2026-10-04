@@ -1,72 +1,68 @@
-from __future__ import annotations
+import os
+import glob
+from rag.pdf_loader import load_and_extract_pdf
+from rag.chunker import chunk_text
+from rag.embeddings import get_embeddings_batch, get_embedding
+from rag.vector_store import FAISSIndex
+from rag.groq_client import get_grounded_answer
 
-from pathlib import Path
+global_vector_store = FAISSIndex()
+is_kb_built = False
 
-from .chunker import chunk_pages
-from .embeddings import embed_texts
-from .groq_client import generate_answer
-from .pdf_loader import extract_pdf_pages
-from .vector_store import build_faiss_index, get_store_info, search
+def build_knowledge_base(data_folder=None):
+    global is_kb_built
+    
+    # Automatically locate the data folder using absolute path
+    if data_folder is None or not os.path.exists(str(data_folder)):
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        data_folder = os.path.join(base_dir, "data")
+        
+    pdf_files = glob.glob(os.path.join(data_folder, "*.pdf"))
+    
+    # Fallback to direct path if relative path fails
+    if not pdf_files:
+        data_folder = r"C:\Users\DELL\Documents\AquaGuard\data"
+        pdf_files = glob.glob(os.path.join(data_folder, "*.pdf"))
+    
+    if not pdf_files:
+        return False, f"No PDF files found in path: {data_folder}. Please check folder."
 
+    total_chunks = 0
+    for file_path in pdf_files:
+        docs = load_and_extract_pdf(file_path)
+        if docs:
+            chunks = chunk_text(docs)
+            texts = [c["chunk_text"] for c in chunks]
+            embeddings = get_embeddings_batch(texts)
+            global_vector_store.add_chunks(chunks, embeddings)
+            total_chunks += len(chunks)
+    
+    if total_chunks > 0:
+        is_kb_built = True
+        return True, f"Knowledge base successfully built with {total_chunks} passages from {len(pdf_files)} documents."
+    else:
+        return False, "Failed to extract text from PDFs."
 
-def build_knowledge_base(
-    uploaded_files,
-    chunk_size: int = 900,
-    chunk_overlap: int = 150,
-) -> dict:
-    """Extract, chunk, embed, and index one or more uploaded PDFs."""
-    all_chunks: list[dict] = []
-    errors: list[str] = []
-
-    for uploaded_file in uploaded_files:
-        try:
-            pages = extract_pdf_pages(uploaded_file)
-            chunks = chunk_pages(
-                pages,
-                source_name=Path(uploaded_file.name).name,
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap,
-            )
-            all_chunks.extend(chunks)
-        except Exception as exc:
-            errors.append(f"{uploaded_file.name}: {exc}")
-
-    if errors:
-        error_text = "\n".join(f"- {item}" for item in errors)
-        raise ValueError(
-            "One or more PDFs could not be processed:\n" + error_text
-        )
-
-    if not all_chunks:
-        raise ValueError("No text chunks were created from the uploaded PDFs.")
-
-    embeddings = embed_texts([chunk["text"] for chunk in all_chunks])
-
-    info = build_faiss_index(all_chunks, embeddings)
-    return info
-
-
-def ask_rag(question: str, top_k: int = 4) -> tuple[str, list[dict]]:
-    """Retrieve relevant chunks and generate a grounded Groq answer."""
-    results = search(question, top_k=top_k)
-
+def ask_rag(query, top_k=3):
+    if not is_kb_built:
+        return "Knowledge base is not initialized. Please build the knowledge base first.", []
+        
+    query_emb = get_embedding(query)
+    results = global_vector_store.search(query_emb, k=top_k)
+    
     if not results:
-        raise ValueError("No relevant document passages were retrieved.")
+        return "The knowledge base does not contain an answer to this question.", []
+        
+    context_text = ""
+    sources = []
+    
+    for res in results:
+        chunk = res["chunk"]
+        context_text += f"[Source: {chunk['filename']}, Page: {chunk['page_number']}]\n{chunk['chunk_text']}\n\n"
+        sources.append(f"{chunk['filename']} (Page {chunk['page_number']})")
+        
+    answer = get_grounded_answer(query, context_text)
+    return answer, list(set(sources))
 
-    context_parts = []
-
-    for result in results:
-        context_parts.append(
-            f"[{result['source']}, p. {result['page']}]\n"
-            f"{result['text']}"
-        )
-
-    context = "\n\n---\n\n".join(context_parts)
-
-    answer = generate_answer(
-        question=question,
-        context=context,
-    )
-
-    return answer, results
-
+def get_store_info():
+    return {"total_chunks": len(global_vector_store.metadata), "is_built": is_kb_built}
