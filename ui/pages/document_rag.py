@@ -1,6 +1,47 @@
+import re
+
 import streamlit as st
 
 from rag.pipeline import ask_rag, build_knowledge_base, get_store_info
+
+SOURCE_WORDS = ("source", "citation", "reference")
+PDF_CITATION = re.compile(r"\s*\[[^\]\n]*(?:\.pdf\b|,\s*p\.\s*\d+)[^\]\n]*\]", re.IGNORECASE)
+
+
+def _hide_sources(answer: str) -> str:
+    """Remove source columns and PDF/page citations from the displayed answer."""
+    lines = answer.splitlines()
+    clean_lines = []
+    index = 0
+
+    while index < len(lines):
+        header = lines[index]
+        if index + 1 < len(lines) and "|" in header and "|" in lines[index + 1]:
+            headers = [cell.strip() for cell in header.strip().strip("|").split("|")]
+            separators = [cell.strip() for cell in lines[index + 1].strip().strip("|").split("|")]
+            source_columns = [
+                column for column, name in enumerate(headers)
+                if any(word in name.lower() for word in SOURCE_WORDS)
+            ]
+            if source_columns and len(headers) == len(separators):
+                keep_columns = [column for column in range(len(headers)) if column not in source_columns]
+                for table_line in lines[index:index + 2]:
+                    cells = [cell.strip() for cell in table_line.strip().strip("|").split("|")]
+                    clean_lines.append("| " + " | ".join(cells[column] for column in keep_columns) + " |")
+                index += 2
+                while index < len(lines) and lines[index].lstrip().startswith("|"):
+                    cells = [cell.strip() for cell in lines[index].strip().strip("|").split("|")]
+                    if len(cells) != len(headers):
+                        break
+                    clean_lines.append("| " + " | ".join(cells[column] for column in keep_columns) + " |")
+                    index += 1
+                continue
+
+        if not re.match(r"^\s*(?:[-*]\s*)?(?:sources?|citations?|references?)\s*:", header, re.IGNORECASE):
+            clean_lines.append(PDF_CITATION.sub("", header))
+        index += 1
+
+    return "\n".join(clean_lines).strip()
 
 
 def render() -> None:
@@ -17,7 +58,7 @@ def render() -> None:
             <p style="margin:8px 0 0;">
                 PDF extraction → text cleaning → overlapping chunks →
                 local sentence-transformer embeddings → FAISS retrieval →
-                Groq LLM answer with source/page references.
+                Grounded answers based on the uploaded documents.
             </p>
         </div>
         """
@@ -84,7 +125,7 @@ def render() -> None:
 
     for message in st.session_state["rag_messages"]:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            st.markdown(_hide_sources(message["content"]))
 
     question = st.chat_input("Ask a question about the uploaded documents...")
     if not question:
@@ -98,16 +139,13 @@ def render() -> None:
         with st.spinner("Retrieving relevant passages and generating answer..."):
             try:
                 answer, sources = ask_rag(question, top_k=top_k)
-                st.markdown(answer)
+                visible_answer = _hide_sources(answer)
+                st.markdown(visible_answer)
                 if sources:
                     st.session_state["rag_evidence"] = sources
-                    with st.expander("📌 Retrieved sources"):
-                        for s in sources:
-                            st.markdown(
-                                f"- **{s['source']}**, page {s['page']} "
-                                f"(similarity: {s['score']:.3f})"
-                            )
-                st.session_state["rag_messages"].append({"role": "assistant", "content": answer})
+                st.session_state["rag_messages"].append(
+                    {"role": "assistant", "content": visible_answer}
+                )
             except Exception as exc:
                 msg = f"RAG query failed: {exc}"
                 st.error(msg)

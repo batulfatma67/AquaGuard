@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 
 from agent.agent_router import run_agent
@@ -7,6 +8,81 @@ from rag.groq_client import get_groq_api_key
 from rag.pipeline import ask_rag
 from services.report_service import build_report_markdown
 from ui.state import DB, ensure_calculation
+
+
+def _render_calculation() -> None:
+    farm = st.session_state.farm
+    account = ensure_calculation()
+
+    st.subheader(f"{farm['crop']} water account")
+    st.caption(
+        f"{account['crop_stage']} stage · {account['period_days']:g}-day period · "
+        "modelled estimates"
+    )
+
+    water, groundwater = st.columns(2)
+    water.metric("Gross water requirement", f"{account['gross_volume_m3']:,.0f} m³")
+    groundwater.metric(
+        "Estimated groundwater",
+        f"{account['groundwater_m3']:,.0f} m³",
+        f"{account['groundwater_dependency_pct']:.0f}% of gross requirement",
+    )
+
+    rows = [
+        ("Reference evapotranspiration (ETo)", f"{account['eto_mm']:.2f} mm/day", "User-entered"),
+        ("Crop coefficient (Kc)", f"{account['kc']:.2f}", "Crop and growth-stage reference"),
+        ("Crop evapotranspiration (ETc)", f"{account['etc_mm']:.2f} mm", "ETo × Kc × period"),
+        ("Effective rainfall", f"{account['effective_rain_mm']:.2f} mm", "Rainfall × effective factor"),
+        ("Soil-water contribution", f"{account['soil_water_contribution_mm']:.2f} mm", "Soil reference × assumed moisture"),
+        ("Net irrigation requirement", f"{account['net_irrigation_mm']:.2f} mm", "max(0, ETc − rain − soil water)"),
+        ("Application efficiency", f"{account['application_efficiency'] * 100:.0f}%", "Irrigation-method default or override"),
+        ("Gross irrigation requirement", f"{account['gross_irrigation_mm']:.2f} mm", "Net requirement ÷ efficiency"),
+        ("Surface-water contribution", f"{account['surface_water_m3']:,.0f} m³", "User-entered estimate"),
+        ("Estimated groundwater", f"{account['groundwater_m3']:,.0f} m³", "Gross volume − surface water"),
+    ]
+    st.dataframe(
+        pd.DataFrame(rows, columns=["Calculation", "Result", "Basis"]),
+        width="stretch",
+        hide_index=True,
+    )
+
+    st.markdown("**Water-source split**")
+    split = pd.DataFrame(
+        {"Volume (m³)": [account["surface_water_m3"], account["groundwater_m3"]]},
+        index=["Surface water", "Groundwater"],
+    )
+    st.bar_chart(split, height=220)
+    st.caption("These are modelled estimates, not measured pumping volumes.")
+
+
+def _render_comparison() -> None:
+    rows = st.session_state.get("scenario_rows") or []
+    if not rows:
+        st.markdown("The scenario comparison was prepared, but no rows are available.")
+        return
+
+    st.subheader("Scenario comparison")
+    st.caption("All volumes are modelled estimates. Scenario A is the baseline.")
+    table = pd.DataFrame(
+        [
+            {
+                "Scenario": row["name"],
+                "Irrigation (mm)": row["irrigation_mm"],
+                "Total water (m³)": row["volume_m3"],
+                "Groundwater (m³)": row["groundwater_m3"],
+                "Difference vs baseline (m³)": row["difference_vs_baseline_m3"],
+                "Stress risk": "Yes" if row["stress_risk"] else "No",
+            }
+            for row in rows
+        ]
+    )
+    st.dataframe(table, width="stretch", hide_index=True)
+    st.bar_chart(
+        table.set_index("Scenario")[["Total water (m³)", "Groundwater (m³)"]],
+        height=260,
+    )
+    if any(row["stress_risk"] for row in rows):
+        st.warning("At least one scenario is flagged for modelled crop-water stress risk.")
 
 
 def _tools() -> dict:
@@ -84,5 +160,9 @@ def render() -> None:
                             result["output"])
                 st.session_state.agent_result = None
                 st.success("Report saved.")
+        elif result["intent"] == "CALCULATE":
+            _render_calculation()
+        elif result["intent"] == "COMPARE":
+            _render_comparison()
         else:
             st.markdown(result["output"])
