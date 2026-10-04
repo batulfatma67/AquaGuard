@@ -36,7 +36,7 @@ PAGES = {
     "📊  What-If Scenarios": scenarios.render,
     "📄  Reports": reports.render,
     "📚  AI Assistant": document_rag.render,
-    "🤖  Assistant": assistant.render,
+    "🤖  Calculated Q/A": assistant.render,
 }
 
 with st.sidebar:
