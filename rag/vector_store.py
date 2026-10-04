@@ -19,7 +19,7 @@ class FAISSIndex:
             return []
         vector = np.array([query_embedding]).astype('float32')
         distances, indices = self.index.search(vector, min(k, self.index.ntotal))
-        
+
         results = []
         for idx, dist in zip(indices[0], distances[0]):
             if idx != -1 and idx < len(self.metadata):
