@@ -8,6 +8,7 @@ def get_connection(db_path: str):
     conn.row_factory = sqlite3.Row
     return conn
 
+###
 def init_db(db_path: str):
     conn = get_connection(db_path)
     cur = conn.cursor()
