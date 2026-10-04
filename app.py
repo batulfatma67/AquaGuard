@@ -1,3 +1,4 @@
+import base64
 import html
 from datetime import date, timedelta
 from pathlib import Path
