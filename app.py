@@ -35,7 +35,7 @@ PAGES = {
     "🛡️  AquaGuard Decision": decision.render,
     "📊  What-If Scenarios": scenarios.render,
     "📄  Reports": reports.render,
-    "📚  Document RAG": document_rag.render,
+    "📚  AI Assistant": document_rag.render,
     "🤖  Assistant": assistant.render,
 }
 
