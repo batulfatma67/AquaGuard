@@ -1,64 +1,42 @@
 from __future__ import annotations
 
-from io import BytesIO
-from typing import BinaryIO
-
-import fitz
+from pathlib import Path
 
 
-def extract_pdf_pages(file_obj: BinaryIO) -> list[dict]:
-    """Extract text page-by-page from a PDF file-like object."""
-    pdf_bytes = file_obj.getvalue() if hasattr(file_obj, "getvalue") else file_obj.read()
-    if not pdf_bytes:
-        raise ValueError("The uploaded PDF is empty.")
-
-    pages: list[dict] = []
-
+def extract_pdf_pages(pdf_source) -> list[dict]:
     try:
-        document = fitz.open(stream=pdf_bytes, filetype="pdf")
-    except Exception as exc:
-        raise ValueError(f"Could not open PDF: {exc}") from exc
+        import fitz
+    except (ImportError, OSError) as exc:
+        raise RuntimeError("PyMuPDF is required. Install with: pip install pymupdf") from exc
 
+    if hasattr(pdf_source, "getvalue"):
+        data = pdf_source.getvalue()
+        filename = Path(getattr(pdf_source, "name", "document.pdf")).name
+        if not data:
+            raise ValueError(f"{filename} is empty.")
+        doc = fitz.open(stream=data, filetype="pdf")
+    else:
+        path = Path(pdf_source)
+        if not path.exists():
+            raise FileNotFoundError(f"PDF not found: {path}")
+        filename = path.name
+        doc = fitz.open(str(path))
+
+    pages = []
     try:
-        if document.page_count == 0:
-            raise ValueError("The PDF contains no pages.")
-
-        for page_number, page in enumerate(document, start=1):
-            text = page.get_text("text") or ""
-            text = _clean_text(text)
-
+        for i in range(len(doc)):
+            text = (doc[i].get_text("text") or "").strip()
             if text:
-                pages.append(
-                    {
-                        "page": page_number,
-                        "text": text,
-                    }
-                )
+                pages.append({"text": text, "page": i + 1})
     finally:
-        document.close()
+        doc.close()
 
     if not pages:
-        raise ValueError(
-            "No selectable text was found. This PDF may be scanned/image-only. "
-            "Add OCR before using it with this prototype."
-        )
-
+        raise ValueError(f"No extractable text was found in {filename}.")
     return pages
 
 
-def _clean_text(text: str) -> str:
-    """Normalize common PDF extraction artifacts without changing wording."""
-    text = text.replace("\x00", " ")
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
-
-    lines = [line.strip() for line in text.split("\n")]
-    cleaned_lines: list[str] = []
-
-    for line in lines:
-        if not line:
-            if cleaned_lines and cleaned_lines[-1] != "":
-                cleaned_lines.append("")
-            continue
-        cleaned_lines.append(" ".join(line.split()))
-
-    return "\n".join(cleaned_lines).strip()
+def load_and_extract_pdf(pdf_path):
+    pages = extract_pdf_pages(pdf_path)
+    filename = Path(getattr(pdf_path, "name", pdf_path)).name
+    return [{"filename": filename, "page_number": p["page"], "chunk_text": p["text"]} for p in pages]

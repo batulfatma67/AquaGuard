@@ -1,59 +1,52 @@
-
-from __future__ import annotations
-
 from functools import lru_cache
 
-import numpy as np
-
-
-EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+MODEL_NAME = "all-MiniLM-L6-v2"  # 384-dimensional (matches FAISSIndex default)
 
 
 @lru_cache(maxsize=1)
-def get_embedding_model():
-    """Load the embedding model once per Python process."""
-    try:
-        from sentence_transformers import SentenceTransformer
-    except (ImportError, OSError) as exc:
-        raise RuntimeError(
-            "The local embedding model could not load. Windows Application Control "
-            "may be blocking one of its native dependencies. Ask your administrator "
-            "to approve the installed SciPy/PyTorch files, or use an approved Python environment."
-        ) from exc
+def _get_model():
+    """
+    Load the embedding model only when it is first needed.
+    """
+    from sentence_transformers import SentenceTransformer
 
-    return SentenceTransformer(EMBEDDING_MODEL_NAME)
+    return SentenceTransformer(MODEL_NAME)
 
 
-def embed_texts(texts: list[str]) -> np.ndarray:
-    """Create normalized float32 embeddings for documents/chunks."""
+def get_embedding(text):
+    """Generate an embedding for a single text."""
+    embedding = _get_model().encode(
+        text,
+        convert_to_tensor=False,
+    )
+    return embedding.tolist()
+
+
+def embed_query(text):
+    """Generate an embedding for a user query."""
+    return get_embedding(text)
+
+
+def get_embeddings_batch(texts, batch_size=64):
+    """Generate embeddings for multiple text chunks."""
     if not texts:
-        raise ValueError("Cannot embed an empty text list.")
+        return []
 
-    model = get_embedding_model()
-
-    vectors = model.encode(
+    embeddings = _get_model().encode(
         texts,
-        batch_size=32,
+        batch_size=batch_size,
+        convert_to_tensor=False,
         show_progress_bar=False,
-        convert_to_numpy=True,
-        normalize_embeddings=True,
     )
 
-    return np.asarray(vectors, dtype="float32")
+    return embeddings.tolist()
 
 
-def embed_query(query: str) -> np.ndarray:
-    """Create one normalized query embedding."""
-    if not query.strip():
-        raise ValueError("Query cannot be empty.")
+def embed_texts(texts, batch_size=64):
+    """
+    Compatibility wrapper used by the RAG knowledge-base pipeline.
 
-    model = get_embedding_model()
-
-    vector = model.encode(
-        [query],
-        show_progress_bar=False,
-        convert_to_numpy=True,
-        normalize_embeddings=True,
-    )
-
-    return np.asarray(vector, dtype="float32")
+    The pipeline expects embed_texts(), while the underlying implementation
+    uses get_embeddings_batch().
+    """
+    return get_embeddings_batch(texts, batch_size=batch_size)
