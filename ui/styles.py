@@ -95,6 +95,9 @@ def inject_readability_styles() -> None:
 
         [data-testid="stMetricValue"] {
             color: #06243f !important;
+            font-size: 28px !important;
+            line-height: 1.2 !important;
+            overflow-wrap: anywhere;
         }
 
         /* Alerts: solid light surface + dark text instead of translucent tints */
@@ -207,7 +210,7 @@ def inject_app_background(path: Path | None) -> None:
             border-radius: 0;
             box-shadow: none;
             margin: 0 auto;
-            padding: 1.35rem 2rem 2.25rem;
+            padding: 4rem 1.5rem 2.25rem;
         }}
 
         [data-testid="stSidebar"] {{

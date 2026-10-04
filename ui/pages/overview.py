@@ -27,17 +27,19 @@ def render() -> None:
     if recalculation_notice:
         st.success(recalculation_notice)
 
-    cols = st.columns(4)
-    with cols[0]:
+    first_metrics = st.columns(2)
+    with first_metrics[0]:
         metric_card("Total Water Requirement", f"{c['gross_volume_m3']:,.0f} m³",
                     f"Modelled gross requirement, {c['period_days']:g}-day period")
-    with cols[1]:
+    with first_metrics[1]:
         metric_card("Estimated Groundwater", f"{c['groundwater_m3']:,.0f} m³",
                     "Residual after surface-water contribution")
-    with cols[2]:
+
+    second_metrics = st.columns(2)
+    with second_metrics[0]:
         metric_card("Crop Water Demand", f"{c['etc_mm']:.1f} mm",
                     f"ETc = ETo × Kc ({c['crop_stage']}, Kc {c['kc']:.2f})")
-    with cols[3]:
+    with second_metrics[1]:
         metric_card("Groundwater Dependency", f"{c['groundwater_dependency_pct']:.0f}%",
                     "Estimated share of gross irrigation")
 

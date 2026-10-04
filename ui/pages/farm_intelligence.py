@@ -12,9 +12,10 @@ def render() -> None:
     inputs = st.session_state.inputs
     c = ensure_calculation()
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2 = st.columns(2)
     c1.metric("NDVI", "0.68", "Illustrative sample")
     c2.metric("Crop stage", c["crop_stage"], f"{c['days_after_sowing']} days after sowing")
+    c3, c4 = st.columns(2)
     c3.metric("Rainfall (period)", f"{inputs['rain_mm']:.1f} mm", "User-entered")
     c4.metric("ETo", f"{inputs['eto_mm']:.1f} mm/day", "User-entered")
 

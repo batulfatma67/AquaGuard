@@ -38,9 +38,10 @@ def render() -> None:
 
     c = ensure_calculation()
 
-    a, b, c3, d = st.columns(4)
+    a, b = st.columns(2)
     a.metric("ETo", f"{c['eto_mm']:.1f} mm/day")
     b.metric("ETc (period)", f"{c['etc_mm']:.1f} mm")
+    c3, d = st.columns(2)
     c3.metric("Gross Irrigation", f"{c['gross_irrigation_mm']:.1f} mm")
     d.metric("Groundwater", f"{c['groundwater_m3']:,.0f} m³")
 
