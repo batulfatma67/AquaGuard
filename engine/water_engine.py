@@ -106,3 +106,5 @@ def compare_scenarios(
         "potential_saving_m3": potential_saving,
         "potential_saving_pct": saving_pct,
     }
+
+
