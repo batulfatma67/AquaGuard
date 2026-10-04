@@ -3,7 +3,6 @@
 ## Farm-Level Groundwater Impact & Irrigation Intelligence
 
 AquaGuard is a prototype decision-support system designed to connect:
-
 1. Crop-water demand
 2. Irrigation requirement
 3. Surface-water contribution
