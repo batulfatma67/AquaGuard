@@ -1,170 +1,52 @@
-import os
-import glob
-import pickle
-import threading
+from __future__ import annotations
 
-from rag.pdf_loader import load_and_extract_pdf
-from rag.chunker import chunk_text
-from rag.embeddings import get_embeddings_batch, get_embedding
-from rag.vector_store import FAISSIndex
-from rag.groq_client import get_grounded_answer
+from pathlib import Path
 
-global_vector_store = FAISSIndex()
-is_kb_built = False
-kb_doc_count = 0
+from .chunker import chunk_pages
+from .groq_client import generate_answer
+from .pdf_loader import extract_pdf_pages
 
-# Prevents two browser sessions from building the index at the same time.
-_build_lock = threading.Lock()
-
-_BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-# Embeddings are saved here after the first build. If the PDFs have not
-# changed, the next start loads this file instead of re-embedding everything.
-_CACHE_FILE = os.path.join(_BASE_DIR, "rag_cache", "kb_cache.pkl")
-_CACHE_VERSION = 2  # bump whenever chunking or the embedding model changes
+NOT_FOUND_MESSAGE = "I could not find enough information in the uploaded documents to answer that."
+MIN_RELEVANCE = 0.25
 
 
-def _resolve_pdf_files(data_folder):
-    # Automatically locate the data folder using absolute path
-    if data_folder is None or not os.path.exists(str(data_folder)):
-        data_folder = os.path.join(_BASE_DIR, "data")
+def build_knowledge_base(uploaded_files, chunk_size: int = 900, chunk_overlap: int = 150) -> dict:
+    all_chunks = []
+    errors = []
+    for uploaded_file in uploaded_files:
+        try:
+            pages = extract_pdf_pages(uploaded_file)
+            chunks = chunk_pages(pages, source_name=Path(uploaded_file.name).name,
+                                 chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+            all_chunks.extend(chunks)
+        except Exception as exc:
+            errors.append(f"{uploaded_file.name}: {exc}")
+    if not all_chunks:
+        details = "\n".join(f"- {x}" for x in errors)
+        raise ValueError("No text chunks were created from the uploaded PDFs." + (f"\n{details}" if details else ""))
 
-    pdf_files = sorted(glob.glob(os.path.join(data_folder, "*.pdf")))
-
-    # Fallback to direct path if relative path fails
-    if not pdf_files:
-        data_folder = r"C:\Users\DELL\Documents\AquaGuard\data"
-        pdf_files = sorted(glob.glob(os.path.join(data_folder, "*.pdf")))
-
-    return data_folder, pdf_files
-
-
-def _signature(pdf_files):
-    # Name + size only (modified time changes on every git clone).
-    return [(os.path.basename(p), os.path.getsize(p)) for p in pdf_files]
-
-
-def _load_cache(signature):
-    try:
-        with open(_CACHE_FILE, "rb") as f:
-            cached = pickle.load(f)
-        if (
-            cached.get("version") == _CACHE_VERSION
-            and cached.get("signature") == signature
-        ):
-            return cached["parts"]
-    except Exception:
-        pass
-    return None
+    from .embeddings import embed_texts
+    from .vector_store import build_faiss_index
+    embeddings = embed_texts([c["text"] for c in all_chunks])
+    info = build_faiss_index(all_chunks, embeddings)
+    info["skipped"] = errors
+    return info
 
 
-def _save_cache(signature, parts):
-    try:
-        os.makedirs(os.path.dirname(_CACHE_FILE), exist_ok=True)
-        with open(_CACHE_FILE, "wb") as f:
-            pickle.dump(
-                {
-                    "version": _CACHE_VERSION,
-                    "signature": signature,
-                    "parts": parts,
-                },
-                f,
-                protocol=pickle.HIGHEST_PROTOCOL,
-            )
-    except Exception:
-        pass  # a cache failure must never break the app
-
-
-def build_knowledge_base(data_folder=None, force=False):
-    """
-    Build (or load from cache) the knowledge base from the PDFs in data/.
-
-    force=False: if the index is already in memory, return immediately.
-    force=True : ignore memory and cache, re-read and re-embed every PDF.
-    Returns (success: bool, message: str).
-    """
-    global global_vector_store, is_kb_built, kb_doc_count
-
-    with _build_lock:
-        if is_kb_built and not force:
-            return True, "Knowledge base is already built."
-
-        data_folder, pdf_files = _resolve_pdf_files(data_folder)
-
-        if not pdf_files:
-            return False, f"No PDF files found in path: {data_folder}. Please check folder."
-
-        signature = _signature(pdf_files)
-
-        parts = None if force else _load_cache(signature)
-        from_cache = parts is not None
-
-        if parts is None:
-            parts = []
-            for file_path in pdf_files:
-                docs = load_and_extract_pdf(file_path)
-                if not docs:
-                    continue
-
-                chunks = chunk_text(docs)
-                if not chunks:
-                    continue
-
-                texts = [c["chunk_text"] for c in chunks]
-                embeddings = get_embeddings_batch(texts)
-                parts.append((chunks, embeddings))
-
-        total_chunks = sum(len(chunks) for chunks, _ in parts)
-
-        if total_chunks == 0:
-            return False, "Failed to extract text from PDFs."
-
-        # Always start from a fresh index so rebuilding never duplicates chunks.
-        new_store = FAISSIndex()
-        for chunks, embeddings in parts:
-            new_store.add_chunks(chunks, embeddings)
-
-        global_vector_store = new_store
-        is_kb_built = True
-        kb_doc_count = len(parts)
-
-        if not from_cache:
-            _save_cache(signature, parts)
-
-        how = "loaded from cache" if from_cache else "built"
-        return True, (
-            f"Knowledge base successfully {how} with {total_chunks} passages "
-            f"from {len(parts)} documents."
-        )
-
-
-def ask_rag(query, top_k=3):
-    if not is_kb_built:
-        return "Knowledge base is not initialized. Please build the knowledge base first.", []
-
-    query_emb = get_embedding(query)
-    results = global_vector_store.search(query_emb, k=top_k)
-
+def ask_rag(question: str, top_k: int = 4, min_score: float = MIN_RELEVANCE) -> tuple[str, list[dict]]:
+    if not question or not question.strip():
+        raise ValueError("Please enter a question.")
+    from .vector_store import search
+    results = [r for r in search(question, top_k=top_k) if r["score"] >= min_score]
     if not results:
-        return "The knowledge base does not contain an answer to this question.", []
-
-    context_text = ""
-    sources = []
-
-    for res in results:
-        chunk = res["chunk"]
-        context_text += f"[Source: {chunk['filename']}, Page: {chunk['page_number']}]\n{chunk['chunk_text']}\n\n"
-        sources.append(f"{chunk['filename']} (Page {chunk['page_number']})")
-
-    answer = get_grounded_answer(query, context_text)
-    return answer, sorted(set(sources))
+        return NOT_FOUND_MESSAGE, []
+    context = "\n\n---\n\n".join(
+        f"[{r.get('source', 'Unknown source')}, p. {r.get('page', 'N/A')}]\n{r['text']}"
+        for r in results
+    )
+    return generate_answer(question=question, context=context), results
 
 
-def get_store_info():
-    total = len(global_vector_store.metadata)
-    return {
-        "total_chunks": total,
-        "chunks": total,
-        "documents": kb_doc_count,
-        "is_built": is_kb_built,
-    }
+def get_store_info() -> dict | None:
+    from .vector_store import get_store_info as read_store_info
+    return read_store_info()

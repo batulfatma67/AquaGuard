@@ -1,71 +1,124 @@
+from __future__ import annotations
+
 import os
 
+import streamlit as st
 from groq import Groq
 
-# "llama3-70b-8192" was shut down by Groq on 30 Aug 2025, so the old code
-# always failed. Models are tried in this order; set the GROQ_MODEL
-# environment variable (or Streamlit secret) to force a specific one.
-DEFAULT_MODELS = [
+
+DEFAULT_MODELS = (
     "llama-3.3-70b-versatile",
     "openai/gpt-oss-20b",
     "llama-3.1-8b-instant",
-]
-
-SYSTEM_PROMPT = (
-    "You are an expert AI assistant for AquaGuard AI, specializing in agriculture and water management.\n"
-    "Follow these rules strictly:\n"
-    "1. Answer using only the supplied document context.\n"
-    "2. Do not invent facts that are not supported by the context.\n"
-    "3. If the context does not contain enough information, say: \"I could not find enough information in the provided documents to answer that.\"\n"
-    "4. Keep the answer clear and useful.\n"
-    "5. When making factual claims, cite the supplied source labels in square brackets, for example [filename, p. X].\n"
-    "6. Do not cite a source that does not support the claim."
 )
 
-
-def _candidate_models():
-    custom = os.environ.get("GROQ_MODEL", "").strip()
-    return ([custom] if custom else []) + DEFAULT_MODELS
+DEFAULT_MODEL = DEFAULT_MODELS[0]
 
 
-def get_grounded_answer(query, context):
-    api_key = os.environ.get("GROQ_API_KEY", "").strip()
+def get_groq_api_key() -> str | None:
+    try:
+        key = st.secrets.get("GROQ_API_KEY")
+    except Exception:
+        key = None
+
+    if key:
+        return str(key).strip()
+
+    key = os.getenv("GROQ_API_KEY")
+    return key.strip() if key else None
+
+
+def generate_answer(
+    question: str,
+    context: str,
+    model: str | None = None,
+) -> str:
+    api_key = get_groq_api_key()
 
     if not api_key:
-        return (
-            "GROQ_API_KEY is not set. Add it as an environment variable "
-            "(Streamlit Cloud: App settings -> Secrets, e.g. "
-            "GROQ_API_KEY = \"your_key\") and restart the app."
+        raise RuntimeError(
+            "GROQ_API_KEY is missing. Add it to Streamlit secrets "
+            "or configure it as an environment variable."
         )
 
-    user_prompt = f"Context:\n{context}\n\nQuestion: {query}\n\nAnswer:"
+    client = Groq(api_key=api_key)
+
+    system_prompt = """You are a document-grounded RAG assistant.
+
+Rules:
+1. Answer using only the supplied document context.
+2. Do not invent unsupported facts.
+3. If the context is insufficient, say:
+   "I could not find enough information in the uploaded documents to answer that."
+4. Keep answers clear and useful.
+5. Cite factual claims using source labels provided in the context,
+   such as [policy.pdf, p. 4].
+6. Only cite sources that support the claims.
+"""
+
+    user_prompt = f"""DOCUMENT CONTEXT:
+{context}
+
+USER QUESTION:
+{question}
+
+Answer using only the document context above.
+"""
+
+    preferred_model = (
+        model.strip()
+        if model and model.strip()
+        else os.getenv("GROQ_MODEL", "").strip()
+    )
+
+    models = []
+
+    if preferred_model:
+        models.append(preferred_model)
+
+    for candidate in DEFAULT_MODELS:
+        if candidate not in models:
+            models.append(candidate)
 
     last_error = None
 
-    try:
-        client = Groq(api_key=api_key)
-    except Exception as e:
-        return f"Could not create the Groq client: {e}"
-
-    for model in _candidate_models():
+    for candidate in models:
         try:
             completion = client.chat.completions.create(
-                model=model,
+                model=candidate,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.1,
+                max_tokens=1200,
             )
-            return completion.choices[0].message.content
-        except Exception as e:
-            last_error = e
-            # Wrong/expired key: trying other models will not help.
-            if getattr(e, "status_code", None) in (401, 403):
+
+            answer = completion.choices[0].message.content
+
+            if not answer or not answer.strip():
+                raise RuntimeError("Groq returned an empty response.")
+
+            return answer.strip()
+
+        except Exception as exc:
+            last_error = exc
+
+            if getattr(exc, "status_code", None) in (401, 403):
                 break
 
-    return (
-        f"Error communicating with Groq API: {last_error}. "
-        "Please check that GROQ_API_KEY is valid and that the model is still "
-        "available (see https://console.groq.com/docs/models)."
+    raise RuntimeError(
+        f"Groq could not generate an answer. Last error: {last_error}"
+    ) from last_error
+
+
+def get_grounded_answer(
+    question: str,
+    context: str,
+    model: str | None = None,
+) -> str:
+    return generate_answer(
+        question=question,
+        context=context,
+        model=model,
     )

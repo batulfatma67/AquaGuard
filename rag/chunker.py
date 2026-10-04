@@ -9,38 +9,35 @@ def chunk_pages(
     chunk_size: int = 900,
     chunk_overlap: int = 150,
 ) -> list[dict]:
-    """
-    Create overlapping character-based chunks while preserving page/source metadata.
-    """
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than zero.")
 
     if chunk_overlap < 0 or chunk_overlap >= chunk_size:
-        raise ValueError("chunk_overlap must be >= 0 and smaller than chunk_size.")
+        raise ValueError(
+            "chunk_overlap must be >= 0 and smaller than chunk_size."
+        )
 
-    chunks: list[dict] = []
+    chunks = []
 
     for page in pages:
         page_chunks = _split_text(
-            page["text"],
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
+            page.get("text", ""),
+            chunk_size,
+            chunk_overlap,
         )
 
         for chunk_index, text in enumerate(page_chunks, start=1):
             cleaned = text.strip()
 
-            if not cleaned:
-                continue
-
-            chunks.append(
-                {
-                    "text": cleaned,
-                    "source": source_name,
-                    "page": int(page["page"]),
-                    "chunk_on_page": chunk_index,
-                }
-            )
+            if cleaned:
+                chunks.append(
+                    {
+                        "text": cleaned,
+                        "source": source_name,
+                        "page": int(page["page"]),
+                        "chunk_on_page": chunk_index,
+                    }
+                )
 
     if not chunks:
         raise ValueError(
@@ -50,11 +47,27 @@ def chunk_pages(
     return chunks
 
 
+def chunk_text(
+    text: str,
+    chunk_size: int = 900,
+    chunk_overlap: int = 150,
+) -> list[str]:
+    return _split_text(text, chunk_size, chunk_overlap)
+
+
 def _split_text(
     text: str,
     chunk_size: int,
     chunk_overlap: int,
 ) -> list[str]:
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero.")
+
+    if chunk_overlap < 0 or chunk_overlap >= chunk_size:
+        raise ValueError(
+            "chunk_overlap must be >= 0 and smaller than chunk_size."
+        )
+
     text = text.strip()
 
     if not text:
@@ -66,7 +79,7 @@ def _split_text(
     separators = ["\n\n", "\n", ". ", "? ", "! ", "; ", ", ", " "]
     pieces = _recursive_split(text, separators, chunk_size)
 
-    chunks: list[str] = []
+    chunks = []
     current = ""
 
     for piece in pieces:
@@ -97,7 +110,7 @@ def _split_text(
     if current:
         chunks.append(current)
 
-    result: list[str] = []
+    result = []
 
     for chunk in chunks:
         if not result or chunk != result[-1]:
@@ -123,7 +136,7 @@ def _recursive_split(
     if len(pieces) == 1:
         return _recursive_split(text, separators[1:], chunk_size)
 
-    result: list[str] = []
+    result = []
 
     for piece in pieces:
         piece = piece.strip()
@@ -143,7 +156,7 @@ def _recursive_split(
 
 def _hard_split(text: str, chunk_size: int) -> list[str]:
     return [
-        text[start : start + chunk_size]
+        text[start:start + chunk_size]
         for start in range(0, len(text), chunk_size)
     ]
 
@@ -153,10 +166,9 @@ def _tail_overlap(text: str, overlap: int) -> str:
         return ""
 
     tail = text[-overlap:]
-
     match = re.search(r"\s", tail)
 
     if match:
-        tail = tail[match.end() :]
+        tail = tail[match.end():]
 
     return tail.strip()
