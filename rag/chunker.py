@@ -37,6 +37,7 @@ def chunk_text(documents, max_chars=1000, overlap=200):
                 "chunk_text": text,
             })
             continue
+<<<<<<< HEAD
 
         start = 0
 
@@ -64,4 +65,19 @@ def chunk_text(documents, max_chars=1000, overlap=200):
             next_start = end - overlap
             start = next_start if next_start > start else end
 
+=======
+            
+        while start < text_length:
+            end = start + max_chars
+            chunk_str = text[start:end]
+            
+            chunked_docs.append({
+                "filename": filename,
+                "page_number": page_number,
+                "chunk_text": chunk_str
+            })
+            
+            start += (max_chars - overlap)
+            
+>>>>>>> 3a3b086e59a851b6c3d8f4086e858fdcc72ff745
     return chunked_docs
