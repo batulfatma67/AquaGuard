@@ -3,10 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from .chunker import chunk_pages
-from .embeddings import embed_texts
 from .groq_client import generate_answer
 from .pdf_loader import extract_pdf_pages
-from .vector_store import build_faiss_index, get_store_info, search
 
 
 def build_knowledge_base(
@@ -37,6 +35,9 @@ def build_knowledge_base(
             + "\n".join(f"- {item}" for item in errors)
         )
 
+    from .embeddings import embed_texts
+    from .vector_store import build_faiss_index
+
     embeddings = embed_texts([chunk["text"] for chunk in all_chunks])
 
     info = build_faiss_index(all_chunks, embeddings)
@@ -61,6 +62,8 @@ def ask_rag(
     if not question.strip():
         raise ValueError("Please enter a question.")
 
+    from .vector_store import search
+
     results = [r for r in search(question, top_k=top_k) if r["score"] >= min_score]
 
     if not results:
@@ -82,4 +85,11 @@ def ask_rag(
     )
 
     return answer, results
+
+
+def get_store_info() -> dict | None:
+    """Load FAISS only when the RAG status view is requested."""
+    from .vector_store import get_store_info as read_store_info
+
+    return read_store_info()
 

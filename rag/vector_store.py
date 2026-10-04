@@ -3,9 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import faiss
-import numpy as np
-
 from .embeddings import embed_query
 
 
@@ -14,8 +11,17 @@ INDEX_PATH = STORE_DIR / "index.faiss"
 METADATA_PATH = STORE_DIR / "metadata.json"
 
 
-def build_faiss_index(chunks: list[dict], embeddings: np.ndarray) -> dict:
+def build_faiss_index(chunks: list[dict], embeddings) -> dict:
     """Build and persist a cosine-similarity FAISS index."""
+    try:
+        import faiss
+        import numpy as np
+    except (ImportError, OSError) as exc:
+        raise RuntimeError(
+            "FAISS could not load. Windows Application Control may be blocking its "
+            "native library; ask your administrator to approve the installed FAISS package."
+        ) from exc
+
     if not chunks:
         raise ValueError("No chunks were provided.")
 
@@ -53,8 +59,16 @@ def build_faiss_index(chunks: list[dict], embeddings: np.ndarray) -> dict:
     }
 
 
-def load_store() -> tuple[faiss.Index, dict]:
+def load_store():
     """Load the persisted FAISS index and metadata."""
+    try:
+        import faiss
+    except (ImportError, OSError) as exc:
+        raise RuntimeError(
+            "FAISS could not load. Windows Application Control may be blocking its "
+            "native library; ask your administrator to approve the installed FAISS package."
+        ) from exc
+
     if not INDEX_PATH.exists() or not METADATA_PATH.exists():
         raise FileNotFoundError(
             "No knowledge base exists yet. Build the knowledge base first."

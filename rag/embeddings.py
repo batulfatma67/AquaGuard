@@ -4,15 +4,23 @@ from __future__ import annotations
 from functools import lru_cache
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 
 EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 @lru_cache(maxsize=1)
-def get_embedding_model() -> SentenceTransformer:
+def get_embedding_model():
     """Load the embedding model once per Python process."""
+    try:
+        from sentence_transformers import SentenceTransformer
+    except (ImportError, OSError) as exc:
+        raise RuntimeError(
+            "The local embedding model could not load. Windows Application Control "
+            "may be blocking one of its native dependencies. Ask your administrator "
+            "to approve the installed SciPy/PyTorch files, or use an approved Python environment."
+        ) from exc
+
     return SentenceTransformer(EMBEDDING_MODEL_NAME)
 
 
