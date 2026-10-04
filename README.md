@@ -14,6 +14,7 @@ AquaGuard_RAG/
 ├── app.py
 ├── requirements.txt
 ├── .python-version
+├── .gitignore
 ├── .streamlit/
 │   └── secrets.toml.example
 ├── rag/
