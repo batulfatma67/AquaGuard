@@ -6,7 +6,12 @@ import streamlit as st
 from groq import Groq
 
 
-DEFAULT_MODEL = "openai/gpt-oss-20b"
+DEFAULT_MODELS = (
+    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-20b",
+    "llama-3.1-8b-instant",
+)
+DEFAULT_MODEL = DEFAULT_MODELS[0]
 
 
 def get_groq_api_key() -> str | None:
@@ -26,7 +31,7 @@ def get_groq_api_key() -> str | None:
 def generate_answer(
     question: str,
     context: str,
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
 ) -> str:
     """Generate a grounded answer from retrieved document context."""
     api_key = get_groq_api_key()
@@ -61,19 +66,32 @@ USER QUESTION:
 Answer the question using only the document context above.
 """
 
-    completion = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.1,
-        max_tokens=1200,
-    )
+    preferred_model = model or os.getenv("GROQ_MODEL", "").strip()
+    models = ([preferred_model] if preferred_model else []) + [
+        candidate for candidate in DEFAULT_MODELS if candidate != preferred_model
+    ]
+    last_error = None
 
-    answer = completion.choices[0].message.content
+    for candidate in models:
+        try:
+            completion = client.chat.completions.create(
+                model=candidate,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                temperature=0.1,
+                max_tokens=1200,
+            )
+            answer = completion.choices[0].message.content
+            if not answer:
+                raise RuntimeError("Groq returned an empty response.")
+            return answer.strip()
+        except Exception as exc:
+            last_error = exc
+            if getattr(exc, "status_code", None) in (401, 403):
+                break
 
-    if not answer:
-        raise RuntimeError("Groq returned an empty response.")
-
-    return answer.strip()
+    raise RuntimeError(
+        f"Groq could not generate an answer with the available models: {last_error}"
+    ) from last_error
