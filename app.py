@@ -1,5 +1,6 @@
 import base64
 import html
+import io
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -17,7 +18,8 @@ from engine.water_engine import (
     compare_scenarios,
 )
 
-from rag.pipeline import build_knowledge_base, ask_rag
+from rag.pipeline import build_knowledge_base, ask_rag, get_store_info
+
 
 # ============================================================
 # BASIC CONFIGURATION
@@ -60,7 +62,8 @@ def file_to_data_uri(path: Path) -> str:
 
     return f"data:{mime};base64,{encoded}"
 
-#Convert the background asset into a browser-compatible data URI
+
+# Convert the background asset into a browser-compatible data URI
 bg_uri = file_to_data_uri(BG_PATH)
 
 
@@ -140,13 +143,9 @@ st.html(
 
     .hero {{
         min-height: 250px;
-
         border-radius: 20px;
-
         overflow: hidden;
-
         position: relative;
-
         background-image:
             linear-gradient(
                 90deg,
@@ -155,30 +154,19 @@ st.html(
                 rgba(7,54,83,.18) 100%
             ),
             url("{bg_uri}");
-
         background-size: cover;
-
         background-position: center;
-
         padding: 42px 46px;
-
         margin-bottom: 22px;
-
-        box-shadow:
-            0 14px 35px rgba(8,42,74,.14);
+        box-shadow: 0 14px 35px rgba(8,42,74,.14);
     }}
 
     .hero h1 {{
         color: white;
-
         font-size: 42px;
-
         line-height: 1.05;
-
         margin: 0 0 10px;
-
         font-weight: 800;
-
         letter-spacing: -1.4px;
     }}
 
@@ -188,13 +176,9 @@ st.html(
 
     .hero p {{
         color: #E4F2FA;
-
         font-size: 16px;
-
         max-width: 650px;
-
         margin: 0;
-
         line-height: 1.55;
     }}
 
@@ -202,117 +186,82 @@ st.html(
 
     .section-title {{
         font-size: 20px;
-
         color: var(--text);
-
         font-weight: 800;
-
         margin: 12px 0 12px;
     }}
 
     .card {{
         background: white;
-
         border: 1px solid var(--border);
-
         border-radius: 16px;
-
         padding: 19px;
-
-        box-shadow:
-            0 7px 22px rgba(13,59,102,.06);
+        box-shadow: 0 7px 22px rgba(13,59,102,.06);
     }}
 
     .metric-label {{
         color: var(--muted);
-
         font-size: 13px;
-
         font-weight: 600;
     }}
 
     .metric-value {{
         color: var(--text);
-
         font-size: 29px;
-
         font-weight: 800;
-
         margin: 6px 0;
     }}
 
     .metric-help {{
         color: var(--muted);
-
         font-size: 11px;
     }}
 
     .pill {{
         display: inline-block;
-
         padding: 5px 10px;
-
         border-radius: 999px;
-
         font-size: 11px;
-
         font-weight: 700;
     }}
 
     .pill-green {{
         background: #E5F7EF;
-
         color: #118357;
     }}
 
     .pill-blue {{
         background: #E7F2FC;
-
         color: #1268AE;
     }}
 
     .pill-yellow {{
         background: #FFF5D9;
-
         color: #9A6A00;
     }}
 
     .callout {{
-        background:
-            linear-gradient(
-                135deg,
-                #F0FAF6,
-                #EAF6FF
-            );
-
+        background: linear-gradient(135deg, #F0FAF6, #EAF6FF);
         border: 1px solid #CDE9DD;
-
         border-radius: 16px;
-
         padding: 18px;
     }}
 
     .small-muted {{
         color: var(--muted);
-
         font-size: 12px;
     }}
 
     .big-number {{
         font-size: 38px;
-
         font-weight: 800;
-
         color: var(--navy);
     }}
 
     .recommendation {{
         background: #FFF8E6;
-
         border: 1px solid #F4D889;
-
         border-radius: 16px;
-
         padding: 20px;
     }}
 
@@ -320,11 +269,8 @@ st.html(
 
     div[data-testid="stMetric"] {{
         background: white;
-
         border: 1px solid var(--border);
-
         border-radius: 14px;
-
         padding: 12px;
     }}
 
@@ -332,22 +278,13 @@ st.html(
 
     .stButton > button {{
         border-radius: 10px;
-
         font-weight: 700;
-
         border: 1px solid #CFE0EC;
     }}
 
     .stButton > button[kind="primary"] {{
-        background:
-            linear-gradient(
-                90deg,
-                #1479D1,
-                #159A91
-            );
-
+        background: linear-gradient(90deg, #1479D1, #159A91);
         color: white;
-
         border: 0;
     }}
 
@@ -365,32 +302,19 @@ st.html(
 # ============================================================
 
 if "farm" not in st.session_state:
-
     st.session_state.farm = {
-
         "district": "Faisalabad",
-
         "tehsil": "Faisalabad City",
-
         "area_ha": 2.02,
-
         "crop": "Wheat",
-
-        "sowing_date":
-            date.today() - timedelta(days=85),
-
+        "sowing_date": date.today() - timedelta(days=85),
         "soil": "Loam",
-
         "irrigation_method": "Flood",
-
         "water_source": "Canal + Tubewell",
-
         "canal_water_m3": 250.0,
     }
 
-
 if "calculation" not in st.session_state:
-
     st.session_state.calculation = None
 
 
@@ -403,47 +327,26 @@ with st.sidebar:
     st.html(
         """
         <div class="brand">
-
             <div class="brand-title">
                 💧 Aqua<span>Guard</span>
             </div>
-
             <div class="brand-sub">
                 SMARTER WATER. HEALTHIER FARMS.
             </div>
-
         </div>
         """
     )
 
-
     pages = {
-
-        "🏠  Overview":
-            "Overview",
-
-        "🌱  Farm Setup":
-            "Farm Setup",
-
-        "🛰️  Farm Intelligence":
-            "Farm Intelligence",
-
-        "💧  Water Account":
-            "Water Account",
-
-        "🛡️  AquaGuard Decision":
-            "AquaGuard Decision",
-
-        "📊  What-If Scenarios":
-            "What-If Scenarios",
-
-        "📄  Reports":
-            "Reports",
-
-        "📚  Document RAG":
-            "Document RAG",
+        "🏠  Overview": "Overview",
+        "🌱  Farm Setup": "Farm Setup",
+        "🛰️  Farm Intelligence": "Farm Intelligence",
+        "💧  Water Account": "Water Account",
+        "🛡️  AquaGuard Decision": "AquaGuard Decision",
+        "📊  What-If Scenarios": "What-If Scenarios",
+        "📄  Reports": "Reports",
+        "📚  Document RAG": "Document RAG",
     }
-
 
     page_label = st.radio(
         "Navigation",
@@ -451,12 +354,9 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-
     page = pages[page_label]
 
-
     st.markdown("---")
-
     st.markdown("**Current Farm**")
 
     st.caption(
@@ -465,9 +365,7 @@ with st.sidebar:
         f"{st.session_state.farm['district']}"
     )
 
-
     st.markdown("---")
-
     st.caption("AquaGuard AI • Prototype")
 
     st.caption(
@@ -481,7 +379,6 @@ with st.sidebar:
 # ============================================================
 
 def run_calculation(farm):
-
     """
     Temporary prototype inputs.
 
@@ -490,78 +387,77 @@ def run_calculation(farm):
     """
 
     eto_mm = 5.2
-
     kc = 1.05
-
     effective_rain_mm = 0.8
-
     soil_contribution_mm = 2.0
-
     efficiency = 0.55
 
-
     return calculate_water_account(
-
         eto_mm=eto_mm,
-
         kc=kc,
-
-        effective_rain_mm=
-            effective_rain_mm,
-
-        soil_water_contribution_mm=
-            soil_contribution_mm,
-
-        application_efficiency=
-            efficiency,
-
+        effective_rain_mm=effective_rain_mm,
+        soil_water_contribution_mm=soil_contribution_mm,
+        application_efficiency=efficiency,
         area_ha=farm["area_ha"],
-
-        surface_water_m3=
-            farm["canal_water_m3"],
+        surface_water_m3=farm["canal_water_m3"],
     )
 
 
 def ensure_calculation():
 
     if st.session_state.calculation is None:
-
-        st.session_state.calculation = (
-            run_calculation(
-                st.session_state.farm
-            )
+        st.session_state.calculation = run_calculation(
+            st.session_state.farm
         )
 
     return st.session_state.calculation
 
 
-def metric_card(
-    label,
-    value,
-    help_text,
-    css_class=""
-):
+def metric_card(label, value, help_text, css_class=""):
 
     st.html(
-
         f"""
         <div class="card {css_class}">
-
             <div class="metric-label">
                 {html.escape(label)}
             </div>
-
             <div class="metric-value">
                 {html.escape(value)}
             </div>
-
             <div class="metric-help">
                 {html.escape(help_text)}
             </div>
-
         </div>
         """
     )
+
+
+# ============================================================
+# RAG HELPERS
+# ============================================================
+
+# rag.pipeline reads its PDFs from this folder.
+DATA_DIR = BASE_DIR / "data"
+
+
+def find_data_pdfs():
+    """PDFs that rag.pipeline will index (the data/ folder of the repo)."""
+    if not DATA_DIR.exists():
+        return []
+    return sorted(DATA_DIR.glob("*.pdf"))
+
+
+def read_store_info():
+    """Knowledge-base status from rag.pipeline (None if nothing is built)."""
+    try:
+        info = get_store_info()
+    except Exception:
+        return None
+
+    if not info or not info.get("is_built") or info.get("total_chunks", 0) <= 0:
+        return None
+
+    return info
 
 
 # ============================================================
@@ -571,76 +467,56 @@ def metric_card(
 if page == "Overview":
 
     st.html(
-
         """
         <div class="hero">
-
             <h1>
                 Welcome to <span>AquaGuard</span>
             </h1>
-
             <p>
                 AI-powered farm water intelligence that connects
                 crop-water demand, irrigation decisions and estimated
                 groundwater use — helping farmers understand where
                 water can potentially be saved.
             </p>
-
         </div>
         """
     )
 
-
     c = ensure_calculation()
 
-
     groundwater = c["groundwater_m3"]
-
     total = c["gross_volume_m3"]
-
-    dependency = c[
-        "groundwater_dependency_pct"
-    ]
-
+    dependency = c["groundwater_dependency_pct"]
 
     cols = st.columns(4)
 
-
     with cols[0]:
-
         metric_card(
             "Total Water Requirement",
             f"{total:,.0f} m³",
             "Current modelled irrigation requirement",
         )
 
-
     with cols[1]:
-
         metric_card(
             "Estimated Groundwater",
             f"{groundwater:,.0f} m³",
             "Residual after surface-water contribution",
         )
 
-
     with cols[2]:
-
         metric_card(
             "Crop Water Demand",
             f"{c['etc_mm']:.1f} mm",
             "ETc = ETo × Kc",
         )
 
-
     with cols[3]:
-
         metric_card(
             "Groundwater Dependency",
             f"{dependency:.0f}%",
             "Estimated share of gross irrigation",
         )
-
 
     st.html(
         '<div class="section-title">'
@@ -648,24 +524,13 @@ if page == "Overview":
         '</div>'
     )
 
-
-    left, right = st.columns(
-        [1.55, 1]
-    )
-
+    left, right = st.columns([1.55, 1])
 
     with left:
 
         chart = pd.DataFrame(
-
             {
-
-                "Day":
-                    pd.date_range(
-                        end=date.today(),
-                        periods=7,
-                    ),
-
+                "Day": pd.date_range(end=date.today(), periods=7),
                 "Total water (m³)": [
                     total * 0.72,
                     total * 0.78,
@@ -675,7 +540,6 @@ if page == "Overview":
                     total * 0.86,
                     total * 0.79,
                 ],
-
                 "Groundwater (m³)": [
                     groundwater * 0.72,
                     groundwater * 0.78,
@@ -686,89 +550,58 @@ if page == "Overview":
                     groundwater * 0.79,
                 ],
             }
-
         ).set_index("Day")
 
-
-        st.html(
-            '<div class="card">'
-        )
-
-        st.markdown(
-            "**Water Usage Trend**"
-        )
-
+        st.html('<div class="card">')
+        st.markdown("**Water Usage Trend**")
         st.caption(
             "Illustrative prototype trend based "
             "on the current account."
         )
-
         st.line_chart(chart)
-
-        st.html(
-            '</div>'
-        )
-
+        st.html('</div>')
 
     with right:
 
         st.html(
-
             f"""
             <div class="card">
-
                 <div class="metric-label">
                     AquaGuard Insight
                 </div>
-
                 <div class="big-number">
                     {dependency:.0f}%
                 </div>
-
                 <p class="small-muted">
-
                     of the modelled gross irrigation
                     requirement is currently estimated
                     to come from groundwater.
-
                 </p>
-
                 <span class="pill pill-green">
                     Decision-ready account
                 </span>
-
             </div>
             """
         )
-
 
         st.markdown("")
 
-
         st.html(
-
             """
             <div class="recommendation">
-
                 <b>
                     💡 Current recommendation
                 </b>
-
                 <p style="margin:8px 0 0;color:#5E5140">
-
                     Review the planned irrigation amount
                     against the calculated crop requirement
                     before pumping.
-
                     Use What-If Scenarios to test a lower
                     groundwater-dependent option.
-
                 </p>
-
             </div>
             """
         )
-
 
     st.html(
         '<div class="section-title">'
@@ -776,51 +609,32 @@ if page == "Overview":
         '</div>'
     )
 
-
     q1, q2, q3 = st.columns(3)
 
-
     with q1:
-
         if st.button(
             "💧 Recalculate Water Account",
             use_container_width=True,
             type="primary",
         ):
-
-            st.session_state.calculation = (
-                run_calculation(
-                    st.session_state.farm
-                )
+            st.session_state.calculation = run_calculation(
+                st.session_state.farm
             )
-
             st.rerun()
 
-
     with q2:
-
         if st.button(
             "📊 Run What-If Scenarios",
             use_container_width=True,
         ):
-
-            st.info(
-                "Open What-If Scenarios "
-                "from the sidebar."
-            )
-
+            st.info("Open What-If Scenarios from the sidebar.")
 
     with q3:
-
         if st.button(
             "🌱 Update Farm Data",
             use_container_width=True,
         ):
-
-            st.info(
-                "Open Farm Setup "
-                "from the sidebar."
-            )
+            st.info("Open Farm Setup from the sidebar.")
 
 
 # ============================================================
@@ -836,26 +650,17 @@ elif page == "Farm Setup":
         "the AquaGuard calculation engine."
     )
 
-
     f = st.session_state.farm
-
 
     with st.form("farm_setup"):
 
         a, b = st.columns(2)
 
-
         with a:
 
-            district = st.text_input(
-                "District",
-                f["district"],
-            )
+            district = st.text_input("District", f["district"])
 
-            tehsil = st.text_input(
-                "Tehsil",
-                f["tehsil"],
-            )
+            tehsil = st.text_input("Tehsil", f["tehsil"])
 
             area = st.number_input(
                 "Farm area (hectares)",
@@ -864,65 +669,33 @@ elif page == "Farm Setup":
                 step=0.01,
             )
 
-
-            crops = [
-                "Wheat",
-                "Maize",
-                "Rice",
-                "Cotton",
-                "Sugarcane",
-            ]
-
+            crops = ["Wheat", "Maize", "Rice", "Cotton", "Sugarcane"]
 
             crop = st.selectbox(
                 "Crop",
                 crops,
-                index=crops.index(
-                    f["crop"]
-                ),
+                index=crops.index(f["crop"]),
             )
 
-
-            sowing = st.date_input(
-                "Sowing date",
-                f["sowing_date"],
-            )
-
+            sowing = st.date_input("Sowing date", f["sowing_date"])
 
         with b:
 
-            soils = [
-                "Loam",
-                "Sandy Loam",
-                "Clay Loam",
-                "Clay",
-            ]
-
+            soils = ["Loam", "Sandy Loam", "Clay Loam", "Clay"]
 
             soil = st.selectbox(
                 "Soil type",
                 soils,
-                index=soils.index(
-                    f["soil"]
-                ),
+                index=soils.index(f["soil"]),
             )
 
-
-            methods = [
-                "Flood",
-                "Drip",
-                "Sprinkler",
-            ]
-
+            methods = ["Flood", "Drip", "Sprinkler"]
 
             method = st.selectbox(
                 "Irrigation method",
                 methods,
-                index=methods.index(
-                    f["irrigation_method"]
-                ),
+                index=methods.index(f["irrigation_method"]),
             )
-
 
             sources = [
                 "Tubewell only",
@@ -930,25 +703,18 @@ elif page == "Farm Setup":
                 "Canal + Tubewell",
             ]
 
-
             source = st.selectbox(
                 "Water source",
                 sources,
-                index=sources.index(
-                    f["water_source"]
-                ),
+                index=sources.index(f["water_source"]),
             )
-
 
             canal = st.number_input(
                 "Estimated surface/canal water used (m³)",
                 min_value=0.0,
-                value=float(
-                    f["canal_water_m3"]
-                ),
+                value=float(f["canal_water_m3"]),
                 step=10.0,
             )
-
 
         submitted = st.form_submit_button(
             "💾 Save Farm Profile",
@@ -956,61 +722,37 @@ elif page == "Farm Setup":
             use_container_width=True,
         )
 
-
     if submitted:
 
         st.session_state.farm = {
-
             "district": district,
-
             "tehsil": tehsil,
-
             "area_ha": area,
-
             "crop": crop,
-
             "sowing_date": sowing,
-
             "soil": soil,
-
-            "irrigation_method":
-                method,
-
-            "water_source":
-                source,
-
-            "canal_water_m3":
-                canal,
+            "irrigation_method": method,
+            "water_source": source,
+            "canal_water_m3": canal,
         }
 
-
-        st.session_state.calculation = (
-            run_calculation(
-                st.session_state.farm
-            )
+        st.session_state.calculation = run_calculation(
+            st.session_state.farm
         )
-
 
         save_farm(
             str(DB_PATH),
             st.session_state.farm,
         )
 
-
         st.success(
             "Farm profile saved and "
             "water account recalculated."
         )
 
+    st.markdown("### Current Profile")
 
-    st.markdown(
-        "### Current Profile"
-    )
-
-
-    st.json(
-        st.session_state.farm
-    )
+    st.json(st.session_state.farm)
 
 
 # ============================================================
@@ -1019,144 +761,69 @@ elif page == "Farm Setup":
 
 elif page == "Farm Intelligence":
 
-    st.title(
-        "🛰️ Farm Intelligence"
-    )
+    st.title("🛰️ Farm Intelligence")
 
     st.caption(
         "Satellite-style crop condition signals "
         "and weather inputs used as decision evidence."
     )
 
-
     f = st.session_state.farm
-
 
     c1, c2, c3, c4 = st.columns(4)
 
+    c1.metric("NDVI", "0.68", "Healthy vegetation")
+    c2.metric("Temperature", "27 °C", "Prototype weather input")
+    c3.metric("Rainfall", "2.4 mm", "Recent rainfall")
+    c4.metric("ETo", "5.2 mm/day", "Reference ET")
 
-    c1.metric(
-        "NDVI",
-        "0.68",
-        "Healthy vegetation",
-    )
-
-
-    c2.metric(
-        "Temperature",
-        "27 °C",
-        "Prototype weather input",
-    )
-
-
-    c3.metric(
-        "Rainfall",
-        "2.4 mm",
-        "Recent rainfall",
-    )
-
-
-    c4.metric(
-        "ETo",
-        "5.2 mm/day",
-        "Reference ET",
-    )
-
-
-    left, right = st.columns(
-        [1.2, 1]
-    )
-
+    left, right = st.columns([1.2, 1])
 
     with left:
 
         st.html(
-
             """
             <div class="card">
-
                 <h3>
                     🌿 Crop Condition
                 </h3>
-
                 <p class="small-muted">
-
                     NDVI is used as observed
                     crop-condition evidence.
-
                     It is not directly converted
                     into an irrigation volume.
-
                 </p>
-
             </div>
             """
         )
 
-
         ndvi_df = pd.DataFrame(
-
-            {
-                "NDVI":
-                    [
-                        0.58,
-                        0.61,
-                        0.64,
-                        0.67,
-                        0.68,
-                        0.68,
-                        0.68,
-                    ]
-            },
-
-            index=[
-                "-6d",
-                "-5d",
-                "-4d",
-                "-3d",
-                "-2d",
-                "-1d",
-                "Today",
-            ],
+            {"NDVI": [0.58, 0.61, 0.64, 0.67, 0.68, 0.68, 0.68]},
+            index=["-6d", "-5d", "-4d", "-3d", "-2d", "-1d", "Today"],
         )
 
-
-        st.line_chart(
-            ndvi_df
-        )
-
+        st.line_chart(ndvi_df)
 
     with right:
 
         st.html(
-
             """
             <div class="callout">
-
                 <b>
                     Interpretation
                 </b>
-
                 <p>
-
                     Vegetation condition is currently
                     represented as healthy in this
                     prototype.
-
                     The water engine remains responsible
                     for estimating irrigation quantity.
-
                 </p>
-
             </div>
             """
         )
 
-
-    st.markdown(
-        "### Current Crop"
-    )
-
+    st.markdown("### Current Crop")
 
     st.info(
         f"{f['crop']} • "
@@ -1172,112 +839,54 @@ elif page == "Farm Intelligence":
 
 elif page == "Water Account":
 
-    st.title(
-        "💧 Water Account"
-    )
+    st.title("💧 Water Account")
 
     st.caption(
         "Transparent crop-water and groundwater "
         "accounting for the current farm."
     )
 
-
     c = ensure_calculation()
-
 
     a, b, c3, d = st.columns(4)
 
+    a.metric("ETo", f"{c['eto_mm']:.1f} mm")
+    b.metric("ETc", f"{c['etc_mm']:.1f} mm")
+    c3.metric("Gross Irrigation", f"{c['gross_irrigation_mm']:.1f} mm")
+    d.metric("Groundwater", f"{c['groundwater_m3']:,.0f} m³")
 
-    a.metric(
-        "ETo",
-        f"{c['eto_mm']:.1f} mm",
-    )
-
-
-    b.metric(
-        "ETc",
-        f"{c['etc_mm']:.1f} mm",
-    )
-
-
-    c3.metric(
-        "Gross Irrigation",
-        f"{c['gross_irrigation_mm']:.1f} mm",
-    )
-
-
-    d.metric(
-        "Groundwater",
-        f"{c['groundwater_m3']:,.0f} m³",
-    )
-
-
-    st.markdown(
-        "### Calculation Breakdown"
-    )
-
+    st.markdown("### Calculation Breakdown")
 
     breakdown = pd.DataFrame(
-
         {
-
-            "Component":
-
-                [
-
-                    "Reference evapotranspiration (ETo)",
-
-                    "Crop coefficient (Kc)",
-
-                    "Crop evapotranspiration (ETc)",
-
-                    "Effective rainfall",
-
-                    "Soil-water contribution",
-
-                    "Net irrigation requirement",
-
-                    "Application efficiency",
-
-                    "Gross irrigation requirement",
-
-                    "Gross farm volume",
-
-                    "Surface-water contribution",
-
-                    "Estimated groundwater",
-                ],
-
-
-            "Value":
-
-                [
-
-                    f"{c['eto_mm']:.2f} mm",
-
-                    f"{c['kc']:.2f}",
-
-                    f"{c['etc_mm']:.2f} mm",
-
-                    f"{c['effective_rain_mm']:.2f} mm",
-
-                    f"{c['soil_water_contribution_mm']:.2f} mm",
-
-                    f"{c['net_irrigation_mm']:.2f} mm",
-
-                    f"{c['application_efficiency']*100:.0f}%",
-
-                    f"{c['gross_irrigation_mm']:.2f} mm",
-
-                    f"{c['gross_volume_m3']:,.1f} m³",
-
-                    f"{c['surface_water_m3']:,.1f} m³",
-
-                    f"{c['groundwater_m3']:,.1f} m³",
-                ],
+            "Component": [
+                "Reference evapotranspiration (ETo)",
+                "Crop coefficient (Kc)",
+                "Crop evapotranspiration (ETc)",
+                "Effective rainfall",
+                "Soil-water contribution",
+                "Net irrigation requirement",
+                "Application efficiency",
+                "Gross irrigation requirement",
+                "Gross farm volume",
+                "Surface-water contribution",
+                "Estimated groundwater",
+            ],
+            "Value": [
+                f"{c['eto_mm']:.2f} mm",
+                f"{c['kc']:.2f}",
+                f"{c['etc_mm']:.2f} mm",
+                f"{c['effective_rain_mm']:.2f} mm",
+                f"{c['soil_water_contribution_mm']:.2f} mm",
+                f"{c['net_irrigation_mm']:.2f} mm",
+                f"{c['application_efficiency']*100:.0f}%",
+                f"{c['gross_irrigation_mm']:.2f} mm",
+                f"{c['gross_volume_m3']:,.1f} m³",
+                f"{c['surface_water_m3']:,.1f} m³",
+                f"{c['groundwater_m3']:,.1f} m³",
+            ],
         }
     )
-
 
     st.dataframe(
         breakdown,
@@ -1285,11 +894,7 @@ elif page == "Water Account":
         hide_index=True,
     )
 
-
-    if st.button(
-        "💾 Save Water Account",
-        type="primary",
-    ):
+    if st.button("💾 Save Water Account", type="primary"):
 
         save_water_account(
             str(DB_PATH),
@@ -1297,9 +902,7 @@ elif page == "Water Account":
             c,
         )
 
-        st.success(
-            "Water account saved to SQLite."
-        )
+        st.success("Water account saved to SQLite.")
 
 
 # ============================================================
@@ -1308,119 +911,75 @@ elif page == "Water Account":
 
 elif page == "AquaGuard Decision":
 
-    st.title(
-        "🛡️ AquaGuard Decision"
-    )
+    st.title("🛡️ AquaGuard Decision")
 
     st.caption(
         "Compare the farm's planned irrigation "
         "with a modelled water-balanced option."
     )
 
-
     c = ensure_calculation()
 
-
     baseline_mm = st.number_input(
-
         "Farmer planned irrigation (mm)",
-
         min_value=0.0,
-
         value=max(
             5.0,
-            round(
-                c["gross_irrigation_mm"] + 10,
-                1,
-            ),
+            round(c["gross_irrigation_mm"] + 10, 1),
         ),
-
         step=1.0,
     )
 
-
-    recommended_mm = (
-        c["gross_irrigation_mm"]
-    )
-
+    recommended_mm = c["gross_irrigation_mm"]
 
     result = compare_scenarios(
-
         baseline_mm=baseline_mm,
-
-        aquaguard_mm=
-            recommended_mm,
-
-        area_ha=
-            st.session_state.farm[
-                "area_ha"
-            ],
-
-        groundwater_fraction=
-            c["groundwater_fraction"],
+        aquaguard_mm=recommended_mm,
+        area_ha=st.session_state.farm["area_ha"],
+        groundwater_fraction=c["groundwater_fraction"],
     )
 
-
     x, y, z = st.columns(3)
-
 
     x.metric(
         "Planned Groundwater",
         f"{result['baseline_groundwater_m3']:,.0f} m³",
     )
 
-
     y.metric(
         "AquaGuard Groundwater",
         f"{result['aquaguard_groundwater_m3']:,.0f} m³",
     )
-
 
     z.metric(
         "Potential Saving",
         f"{result['potential_saving_m3']:,.0f} m³",
     )
 
-
     st.html(
-
         f"""
         <div class="recommendation">
-
             <h3>
                 💡 AquaGuard Recommendation
             </h3>
-
             <p>
-
                 Modelled crop-water demand indicates
                 approximately
-
                 <b>
                     {recommended_mm:.1f} mm
                 </b>
-
                 of gross irrigation for this period.
-
                 The comparison estimates a potential
                 groundwater saving of
-
                 <b>
                     {result['potential_saving_m3']:,.0f} m³
                 </b>
-
                 versus the entered plan.
-
             </p>
-
-
             <p class="small-muted">
-
                 This is a modelled potential saving,
                 not a measured reduction in pumping.
-
             </p>
-
         </div>
         """
     )
@@ -1432,121 +991,55 @@ elif page == "AquaGuard Decision":
 
 elif page == "What-If Scenarios":
 
-    st.title(
-        "📊 What-If Scenarios"
-    )
+    st.title("📊 What-If Scenarios")
 
-    st.caption(
-        "Test irrigation choices before pumping."
-    )
-
+    st.caption("Test irrigation choices before pumping.")
 
     c = ensure_calculation()
-
     f = st.session_state.farm
 
-
     baseline = st.number_input(
-
         "Scenario A — Farmer plan (mm)",
-
         min_value=0.0,
-
         max_value=200.0,
-
-        value=float(
-            round(
-                c["gross_irrigation_mm"] + 10,
-                1,
-            )
-        ),
-
+        value=float(round(c["gross_irrigation_mm"] + 10, 1)),
         step=1.0,
     )
-
 
     aqua = st.number_input(
-
         "Scenario B — AquaGuard option (mm)",
-
         min_value=0.0,
-
         max_value=200.0,
-
-        value=float(
-            round(
-                c["gross_irrigation_mm"],
-                1,
-            )
-        ),
-
+        value=float(round(c["gross_irrigation_mm"], 1)),
         step=1.0,
     )
-
 
     conservative = st.number_input(
-
         "Scenario C — Lower application (mm)",
-
         min_value=0.0,
-
         max_value=200.0,
-
         value=float(
-            round(
-                max(
-                    0,
-                    c["gross_irrigation_mm"] - 5,
-                ),
-                1,
-            )
+            round(max(0, c["gross_irrigation_mm"] - 5), 1)
         ),
-
         step=1.0,
     )
-
 
     rows = []
 
-
     for name, mm in [
-
         ("Farmer plan", baseline),
-
         ("AquaGuard", aqua),
-
         ("Lower application", conservative),
-
     ]:
 
-        volume = (
-            mm *
-            f["area_ha"] *
-            10
-        )
+        volume = mm * f["area_ha"] * 10
 
+        groundwater = volume * c["groundwater_fraction"]
 
-        groundwater = (
-            volume *
-            c["groundwater_fraction"]
-        )
-
-
-        rows.append(
-
-            [
-                name,
-                mm,
-                volume,
-                groundwater,
-            ]
-        )
-
+        rows.append([name, mm, volume, groundwater])
 
     df = pd.DataFrame(
-
         rows,
-
         columns=[
             "Scenario",
             "Irrigation (mm)",
@@ -1555,20 +1048,14 @@ elif page == "What-If Scenarios":
         ],
     )
 
-
     st.dataframe(
         df,
         use_container_width=True,
         hide_index=True,
     )
 
-
     st.bar_chart(
-
-        df.set_index(
-            "Scenario"
-        )[
-
+        df.set_index("Scenario")[
             [
                 "Total water (m³)",
                 "Estimated groundwater (m³)",
@@ -1576,9 +1063,7 @@ elif page == "What-If Scenarios":
         ]
     )
 
-
     st.warning(
-
         "The lowest-water scenario is not automatically "
         "the best decision. AquaGuard's intended objective "
         "is to meet crop water needs while reducing "
@@ -1594,8 +1079,8 @@ elif page == "Document RAG":
 
     st.title("📚 Document RAG")
     st.caption(
-        "Upload PDF documents, build a local FAISS knowledge base, "
-        "and ask questions using retrieval-augmented generation."
+        "Ask questions about the PDF documents stored in the repository's "
+        "data/ folder. The FAISS knowledge base is built automatically."
     )
 
     st.html(
@@ -1603,7 +1088,7 @@ elif page == "Document RAG":
         <div class="callout">
             <b>How it works</b>
             <p style="margin:8px 0 0;">
-                PDF extraction → text cleaning → overlapping chunks →
+                Repository PDFs → text extraction → overlapping chunks →
                 local sentence-transformer embeddings → FAISS retrieval →
                 Groq LLM answer with source/page references.
             </p>
@@ -1611,33 +1096,56 @@ elif page == "Document RAG":
         """
     )
 
+    if "rag_messages" not in st.session_state:
+        st.session_state["rag_messages"] = []
+
+    pdf_files = find_data_pdfs()
+
+    store_info = read_store_info()
+    kb_ready = store_info is not None
+
+    # ---- Build / load automatically (fast when rag_cache/ exists) ----
+    if (
+        not kb_ready
+        and pdf_files
+        and not st.session_state.get("rag_auto_failed")
+    ):
+        with st.spinner(
+            f"Preparing knowledge base from {len(pdf_files)} PDF(s). "
+            "The very first build can take a few minutes; later starts load "
+            "from the saved cache."
+        ):
+            try:
+                ok, message = build_knowledge_base()
+                if not ok:
+                    st.session_state["rag_auto_failed"] = message
+            except Exception as exc:
+                st.session_state["rag_auto_failed"] = str(exc)
+
+        store_info = read_store_info()
+        kb_ready = store_info is not None
+
     left, right = st.columns([1.15, 1])
 
+    # ---------------- LEFT: sources + controls ----------------
     with left:
-        st.subheader("1. Build Knowledge Base")
+        st.subheader("1. Knowledge Base Sources")
 
-        uploaded_files = st.file_uploader(
-            "Upload one or more PDF documents",
-            type=["pdf"],
-            accept_multiple_files=True,
-            help="Text-based PDFs are supported. Scanned/image-only PDFs require OCR.",
-        )
+        if pdf_files:
+            st.success(f"{len(pdf_files)} PDF(s) found in the data/ folder:")
+            for pdf in pdf_files:
+                st.markdown(f"- `{pdf.name}`")
+        else:
+            st.warning(
+                "No PDF found in the data/ folder. Put your PDFs in a folder "
+                "named `data` next to app.py and push it to GitHub."
+            )
 
-        chunk_size = st.slider(
-            "Chunk size (characters)",
-            min_value=400,
-            max_value=1800,
-            value=900,
-            step=100,
-        )
-
-        chunk_overlap = st.slider(
-            "Chunk overlap (characters)",
-            min_value=50,
-            max_value=400,
-            value=150,
-            step=25,
-        )
+        if st.session_state.get("rag_auto_failed"):
+            st.error(
+                "Knowledge-base build failed: "
+                f"{st.session_state['rag_auto_failed']}"
+            )
 
         top_k = st.slider(
             "Retrieved chunks per question",
@@ -1646,76 +1154,66 @@ elif page == "Document RAG":
             value=4,
         )
 
-        if st.button(
-            "🔨 Build / Replace Knowledge Base",
+        rebuild_clicked = st.button(
+            "🔨 Rebuild Knowledge Base",
             type="primary",
             use_container_width=True,
-        ):
-            if not uploaded_files:
-                st.warning("Please upload at least one PDF.")
-            elif chunk_overlap >= chunk_size:
-                st.error("Chunk overlap must be smaller than chunk size.")
-            else:
-                with st.spinner(
-                    "Extracting PDFs, creating chunks, embedding text, and building FAISS..."
-                ):
-                    try:
-                        info = build_knowledge_base(
-                            uploaded_files,
-                            chunk_size=chunk_size,
-                            chunk_overlap=chunk_overlap,
-                        )
-                        st.session_state["rag_store_info"] = info
-                        st.session_state["rag_messages"] = []
-                        st.success(
-                            f"Knowledge base ready: {info['documents']} document(s), "
-                            f"{info['chunks']} chunk(s)."
-                        )
-                    except Exception as exc:
-                        st.error(f"Knowledge-base build failed: {exc}")
+            help="Re-reads and re-embeds every PDF in data/ (slow).",
+        )
 
+        if rebuild_clicked:
+            rebuilt = False
+
+            with st.spinner("Re-reading PDFs and rebuilding the index..."):
+                try:
+                    ok, message = build_knowledge_base(force=True)
+                    if ok:
+                        rebuilt = True
+                    else:
+                        st.error(message)
+                except Exception as exc:
+                    st.error(f"Knowledge-base build failed: {exc}")
+
+            if rebuilt:
+                st.session_state["rag_messages"] = []
+                st.session_state.pop("rag_auto_failed", None)
+                st.rerun()
+
+    # ---------------- RIGHT: status ----------------
     with right:
         st.subheader("Knowledge Base Status")
 
-        try:
-            info = get_store_info()
-        except Exception:
-            info = None
-
-        if info:
-            st.metric("Documents", info.get("documents", 0))
-            st.metric("Indexed chunks", info.get("chunks", 0))
-            st.caption(
-                f"Embedding model: {info.get('embedding_model', 'N/A')}"
-            )
-            st.caption(
-                f"Vector dimension: {info.get('dimension', 'N/A')}"
-            )
+        if kb_ready:
+            st.metric("Documents", store_info.get("documents", 0))
+            st.metric("Indexed chunks", store_info.get("total_chunks", 0))
         else:
             st.info(
-                "No FAISS knowledge base found yet. "
-                "Upload PDFs and click Build / Replace Knowledge Base."
+                "Knowledge base is not built yet. Add PDFs to the data/ "
+                "folder, or click Rebuild Knowledge Base."
             )
 
         st.markdown("### API configuration")
         st.caption(
-            "The Groq API key is read from GROQ_API_KEY. "
+            "The Groq API key is read from GROQ_API_KEY "
+            "(Streamlit Cloud: App settings → Secrets). "
             "Do not hard-code the key in app.py or commit it to GitHub."
         )
 
     st.divider()
 
+    # ---------------- CHAT ----------------
     st.subheader("2. Ask Your Documents")
 
-    if "rag_messages" not in st.session_state:
-        st.session_state["rag_messages"] = []
+    if not kb_ready:
+        st.warning("The knowledge base is not ready yet, so chat is disabled.")
 
     for message in st.session_state["rag_messages"]:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
     question = st.chat_input(
-        "Ask a question about the uploaded documents..."
+        "Ask a question about the documents...",
+        disabled=not kb_ready,
     )
 
     if question:
@@ -1729,24 +1227,28 @@ elif page == "Document RAG":
         with st.chat_message("assistant"):
             with st.spinner("Retrieving relevant passages and generating answer..."):
                 try:
-                    answer, sources = ask_rag(
-                        question,
-                        top_k=top_k,
-                    )
+                    answer, sources = ask_rag(question, top_k=top_k)
 
                     st.markdown(answer)
 
+                    saved_text = answer
+
                     if sources:
+                        # rag.pipeline returns strings like "file.pdf (Page 3)"
+                        labels = [
+                            s if isinstance(s, str)
+                            else f"{s.get('source', 'source')} (Page {s.get('page', '?')})"
+                            for s in sources
+                        ]
+
                         with st.expander("📌 Retrieved sources"):
-                            for source in sources:
-                                st.markdown(
-                                    f"- **{source['source']}**, "
-                                    f"page {source['page']} "
-                                    f"(similarity: {source['score']:.3f})"
-                                )
+                            for label in labels:
+                                st.markdown(f"- {label}")
+
+                        saved_text += "\n\n**Sources:** " + "; ".join(labels)
 
                     st.session_state["rag_messages"].append(
-                        {"role": "assistant", "content": answer}
+                        {"role": "assistant", "content": saved_text}
                     )
 
                 except Exception as exc:
@@ -1763,170 +1265,87 @@ elif page == "Document RAG":
 
 elif page == "Reports":
 
-    st.title(
-        "📄 AquaGuard Report"
-    )
+    st.title("📄 AquaGuard Report")
 
     st.caption(
         "A concise prototype report for "
         "the current farm account."
     )
 
-
     c = ensure_calculation()
-
     f = st.session_state.farm
 
-
     st.html(
-
         f"""
         <div class="card">
-
             <h2 style="color:#082A4A;margin-top:0">
-
                 Farm Water Intelligence Report
-
             </h2>
-
-
             <p>
-
                 <b>Location:</b>
-
                 {html.escape(f['district'])},
                 {html.escape(f['tehsil'])}
-
             </p>
-
-
             <p>
-
                 <b>Crop:</b>
                 {html.escape(f['crop'])}
-
                 &nbsp; | &nbsp;
-
                 <b>Area:</b>
                 {f['area_ha']:.2f} ha
-
                 &nbsp; | &nbsp;
-
                 <b>Soil:</b>
                 {html.escape(f['soil'])}
-
             </p>
-
-
             <hr>
-
-
             <p>
-
                 <b>Estimated crop demand:</b>
                 {c['etc_mm']:.1f} mm
-
             </p>
-
-
             <p>
-
                 <b>Gross irrigation requirement:</b>
                 {c['gross_irrigation_mm']:.1f} mm
-
             </p>
-
-
             <p>
-
                 <b>Total modelled irrigation volume:</b>
                 {c['gross_volume_m3']:,.0f} m³
-
             </p>
-
-
             <p>
-
                 <b>Estimated groundwater:</b>
                 {c['groundwater_m3']:,.0f} m³
-
             </p>
-
-
             <p>
-
                 <b>Groundwater dependency:</b>
                 {c['groundwater_dependency_pct']:.0f}%
-
             </p>
-
-
             <hr>
-
-
             <p class="small-muted">
-
                 AquaGuard is a prototype decision-support
                 system.
-
                 Values depend on assumptions and
                 user-provided inputs.
-
                 Potential savings are not direct measurements
                 of groundwater extraction.
-
             </p>
-
         </div>
         """
     )
 
-
     st.download_button(
-
         "⬇️ Download Report Data (CSV)",
-
-        data=pd.DataFrame(
-
-            [
-                {
-                    **f,
-                    **c,
-                }
-            ]
-
-        ).to_csv(
-            index=False
-        ).encode("utf-8"),
-
-        file_name=
-            "aquaguard_water_report.csv",
-
-        mime=
-            "text/csv",
-
+        data=pd.DataFrame([{**f, **c}]).to_csv(index=False).encode("utf-8"),
+        file_name="aquaguard_water_report.csv",
+        mime="text/csv",
         use_container_width=True,
     )
 
-
-    recent = fetch_recent_accounts(
-        str(DB_PATH)
-    )
-
+    recent = fetch_recent_accounts(str(DB_PATH))
 
     if recent:
 
-        st.markdown(
-            "### Saved Accounts"
-        )
+        st.markdown("### Saved Accounts")
 
         st.dataframe(
-
-            pd.DataFrame(
-                recent
-            ),
-
+            pd.DataFrame(recent),
             use_container_width=True,
-
             hide_index=True,
         )
