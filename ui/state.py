@@ -1,7 +1,7 @@
 """Session state and shared calculation helpers for the Streamlit UI."""
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import streamlit as st
 
@@ -105,6 +105,7 @@ def recalculate() -> dict | None:
         st.session_state.calculation = account_for_farm(
             st.session_state.farm, st.session_state.inputs
         )
+        st.session_state.last_calculation_at = datetime.now().strftime("%H:%M:%S")
     except ValueError as exc:
         st.session_state.calculation = None
         st.error(f"Calculation failed: {exc}")

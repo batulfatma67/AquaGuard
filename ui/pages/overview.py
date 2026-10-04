@@ -23,6 +23,10 @@ def render() -> None:
     c = ensure_calculation()
     farm = st.session_state.farm
 
+    recalculation_notice = st.session_state.pop("recalculation_notice", None)
+    if recalculation_notice:
+        st.success(recalculation_notice)
+
     cols = st.columns(4)
     with cols[0]:
         metric_card("Total Water Requirement", f"{c['gross_volume_m3']:,.0f} m³",
@@ -85,11 +89,17 @@ def render() -> None:
         )
 
     section_title("Quick Actions")
-    q1, q2, q3 = st.columns(3)
-    if q1.button("💧 Recalculate Water Account", width="stretch", type="primary"):
-        recalculate()
+    if st.button("💧 Recalculate Water Account", width="stretch", type="primary"):
+        result = recalculate()
+        if result:
+            st.session_state.recalculation_notice = (
+                "Water account recalculated from the current farm profile and inputs "
+                f"at {st.session_state.last_calculation_at}."
+            )
         st.rerun()
+
+    q2, q3 = st.columns(2)
     q2.button("📊 Run What-If Scenarios", width="stretch",
               on_click=go, args=("📊  What-If Scenarios",))
-    q3.button("🌱 Update Farm Data", width="stretch",
+    q3.button("🌱 Farm Profiles", width="stretch",
               on_click=go, args=("🌱  Farm Profiles",))

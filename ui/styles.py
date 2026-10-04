@@ -29,6 +29,8 @@ def inject_readability_styles() -> None:
         <style>
         [data-testid="stMain"] {
             color: #0B2239;
+            font-size: 15px;
+            line-height: 1.45;
         }
 
         [data-testid="stMain"] [data-testid="stMarkdownContainer"] p,
@@ -42,6 +44,21 @@ def inject_readability_styles() -> None:
             font-weight: 600;
         }
 
+        [data-testid="stMain"] .stButton > button {
+            height: auto;
+            min-height: 2.6rem;
+            padding: .45rem .65rem;
+            white-space: normal;
+        }
+
+        [data-testid="stMain"] .stButton > button p {
+            margin: 0;
+            line-height: 1.2;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            text-overflow: clip;
+        }
+
         /* Captions are theme-grey by default; darken so they read over the picture */
         [data-testid="stMain"] [data-testid="stCaptionContainer"],
         [data-testid="stMain"] [data-testid="stCaptionContainer"] p {
@@ -53,7 +70,22 @@ def inject_readability_styles() -> None:
         [data-testid="stHeading"] h2,
         [data-testid="stHeading"] h3 {
             color: #06243f;
-            text-shadow: 0 1px 6px rgba(255,255,255,.75);
+            text-shadow: none;
+        }
+
+        [data-testid="stHeading"] h1 {
+            font-size: 30px;
+            line-height: 1.2;
+        }
+
+        [data-testid="stHeading"] h2 {
+            font-size: 23px;
+            line-height: 1.25;
+        }
+
+        [data-testid="stHeading"] h3 {
+            font-size: 19px;
+            line-height: 1.3;
         }
 
         [data-testid="stMetricLabel"] p,
@@ -142,7 +174,9 @@ def inject_readability_styles() -> None:
         /* Section titles rendered as custom HTML */
         .section-title {
             color: #06243f;
-            text-shadow: 0 1px 6px rgba(255,255,255,.75);
+            font-size: 18px;
+            line-height: 1.3;
+            text-shadow: none;
         }
         </style>
         """
@@ -150,7 +184,7 @@ def inject_readability_styles() -> None:
 
 
 def inject_app_background(path: Path | None) -> None:
-    """Background picture kept visible; content sits on frosted-glass panels for readability."""
+    """Place the background picture only in the sidebar; keep the app canvas clean."""
     if path is None:
         return
     uri = file_to_data_uri(path)
@@ -158,40 +192,35 @@ def inject_app_background(path: Path | None) -> None:
         f"""
         <style>
         .stApp {{
+            background: #F1F5F7 !important;
+        }}
+
+        [data-testid="stAppViewContainer"],
+        [data-testid="stMain"] {{
+            background: #F1F5F7 !important;
+        }}
+
+        .block-container {{
+            max-width: 1500px;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            margin: 0 auto;
+            padding: 1.35rem 2rem 2.25rem;
+        }}
+
+        [data-testid="stSidebar"] {{
             background-image:
-                linear-gradient(rgba(8,42,74,.00), rgba(8,42,74,.12)),
+                linear-gradient(rgba(5,34,57,.84), rgba(5,34,57,.76)),
                 url("{uri}");
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
         }}
 
-        [data-testid="stHeader"] {{
+        [data-testid="stSidebar"] > div:first-child {{
             background: transparent;
-        }}
-
-        /* Main content panel: picture shows around and softly through it */
-        .block-container {{
-            background: rgba(255,255,255,.46);
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
-            border: 1px solid rgba(255,255,255,.55);
-            border-radius: 22px;
-            box-shadow: 0 18px 50px rgba(8,42,74,.22);
-            margin-top: 18px;
-            margin-bottom: 18px;
-            padding: 2.2rem 2.4rem 3rem;
-        }}
-
-        [data-testid="stSidebar"] {{
-            background: linear-gradient(
-                180deg,
-                rgba(6,40,71,.80) 0%,
-                rgba(11,60,99,.76) 65%,
-                rgba(8,42,74,.84) 100%
-            );
-            backdrop-filter: blur(3px);
-            -webkit-backdrop-filter: blur(3px);
         }}
 
         .card,
@@ -199,11 +228,11 @@ def inject_app_background(path: Path | None) -> None:
         div[data-testid="stMetric"],
         div[data-testid="stExpander"],
         div[data-testid="stVerticalBlockBorderWrapper"] {{
-            background-color: rgba(255,255,255,.90);
+            background-color: #FFFFFF;
         }}
 
         .recommendation {{
-            background: rgba(255,248,230,.92);
+            background: #FFF8E6;
         }}
         </style>
         """
@@ -283,9 +312,9 @@ def inject_styles(bg_path: Path) -> None:
     /* HERO */
 
     .hero {{
-        min-height: 250px;
+        min-height: 210px;
 
-        border-radius: 20px;
+        border-radius: 14px;
 
         overflow: hidden;
 
@@ -304,9 +333,9 @@ def inject_styles(bg_path: Path) -> None:
 
         background-position: center;
 
-        padding: 42px 46px;
+        padding: 32px 36px;
 
-        margin-bottom: 22px;
+        margin-bottom: 18px;
 
         box-shadow:
             0 14px 35px rgba(8,42,74,.14);
@@ -315,7 +344,7 @@ def inject_styles(bg_path: Path) -> None:
     .hero h1 {{
         color: white;
 
-        font-size: 42px;
+        font-size: 36px;
 
         line-height: 1.05;
 
@@ -323,7 +352,7 @@ def inject_styles(bg_path: Path) -> None:
 
         font-weight: 800;
 
-        letter-spacing: -1.4px;
+        letter-spacing: 0;
     }}
 
     .hero h1 span {{
@@ -333,7 +362,7 @@ def inject_styles(bg_path: Path) -> None:
     .hero p {{
         color: #E4F2FA;
 
-        font-size: 16px;
+        font-size: 15px;
 
         max-width: 650px;
 
@@ -345,13 +374,13 @@ def inject_styles(bg_path: Path) -> None:
     /* CARDS */
 
     .section-title {{
-        font-size: 20px;
+        font-size: 18px;
 
         color: var(--text);
 
         font-weight: 800;
 
-        margin: 12px 0 12px;
+        margin: 18px 0 10px;
     }}
 
     .card {{
@@ -359,9 +388,9 @@ def inject_styles(bg_path: Path) -> None:
 
         border: 1px solid var(--border);
 
-        border-radius: 16px;
+        border-radius: 12px;
 
-        padding: 19px;
+        padding: 16px;
 
         box-shadow:
             0 7px 22px rgba(13,59,102,.06);
@@ -378,7 +407,7 @@ def inject_styles(bg_path: Path) -> None:
     .metric-value {{
         color: var(--text);
 
-        font-size: 29px;
+        font-size: 26px;
 
         font-weight: 800;
 

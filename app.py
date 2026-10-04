@@ -22,7 +22,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-inject_styles(BG_PATH)
+inject_styles(APP_BG_PATH or BG_PATH)
 inject_app_background(APP_BG_PATH)
 inject_readability_styles()
 init_state()
