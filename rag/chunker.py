@@ -1,67 +1,162 @@
+from __future__ import annotations
+
 import re
 
 
-def _clean(text):
-    """Collapse line breaks / repeated spaces left over from PDF extraction."""
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def chunk_text(documents, max_chars=1000, overlap=200):
+def chunk_pages(
+    pages: list[dict],
+    source_name: str,
+    chunk_size: int = 900,
+    chunk_overlap: int = 150,
+) -> list[dict]:
     """
-    Split each page into overlapping chunks.
-
-    Compared with a plain fixed-width split:
-      - text is cleaned first (no stray line breaks / blank pages),
-      - chunks end on a space instead of cutting words in half,
-      - no tiny duplicate chunk is created at the end of a page.
+    Create overlapping character-based chunks while preserving page/source metadata.
     """
-    if overlap >= max_chars:
-        overlap = max_chars // 5
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero.")
 
-    chunked_docs = []
+    if chunk_overlap < 0 or chunk_overlap >= chunk_size:
+        raise ValueError("chunk_overlap must be >= 0 and smaller than chunk_size.")
 
-    for doc in documents:
-        text = _clean(doc["chunk_text"])
-        filename = doc["filename"]
-        page_number = doc["page_number"]
+    chunks: list[dict] = []
 
-        if not text:
+    for page in pages:
+        page_chunks = _split_text(
+            page["text"],
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+
+        for chunk_index, text in enumerate(page_chunks, start=1):
+            cleaned = text.strip()
+
+            if not cleaned:
+                continue
+
+            chunks.append(
+                {
+                    "text": cleaned,
+                    "source": source_name,
+                    "page": int(page["page"]),
+                    "chunk_on_page": chunk_index,
+                }
+            )
+
+    if not chunks:
+        raise ValueError(
+            f"No usable text chunks were created from {source_name}."
+        )
+
+    return chunks
+
+
+def _split_text(
+    text: str,
+    chunk_size: int,
+    chunk_overlap: int,
+) -> list[str]:
+    text = text.strip()
+
+    if not text:
+        return []
+
+    if len(text) <= chunk_size:
+        return [text]
+
+    separators = ["\n\n", "\n", ". ", "? ", "! ", "; ", ", ", " "]
+    pieces = _recursive_split(text, separators, chunk_size)
+
+    chunks: list[str] = []
+    current = ""
+
+    for piece in pieces:
+        piece = piece.strip()
+
+        if not piece:
             continue
 
-        length = len(text)
+        candidate = f"{current} {piece}".strip() if current else piece
 
-        if length <= max_chars:
-            chunked_docs.append({
-                "filename": filename,
-                "page_number": page_number,
-                "chunk_text": text,
-            })
+        if len(candidate) <= chunk_size:
+            current = candidate
             continue
 
-        start = 0
+        if current:
+            chunks.append(current)
 
-        while start < length:
-            end = min(start + max_chars, length)
+        overlap = _tail_overlap(current, chunk_overlap)
+        candidate = f"{overlap} {piece}".strip() if overlap else piece
 
-            # Prefer to finish the chunk at a word boundary.
-            if end < length:
-                space = text.rfind(" ", start + int(max_chars * 0.8), end)
-                if space != -1:
-                    end = space
+        if len(candidate) <= chunk_size:
+            current = candidate
+        else:
+            hard_parts = _hard_split(candidate, chunk_size)
+            chunks.extend(hard_parts[:-1])
+            current = hard_parts[-1] if hard_parts else ""
 
-            chunk_str = text[start:end].strip()
+    if current:
+        chunks.append(current)
 
-            if chunk_str:
-                chunked_docs.append({
-                    "filename": filename,
-                    "page_number": page_number,
-                    "chunk_text": chunk_str,
-                })
+    result: list[str] = []
 
-            if end >= length:
-                break
+    for chunk in chunks:
+        if not result or chunk != result[-1]:
+            result.append(chunk)
 
-            next_start = end - overlap
-            start = next_start if next_start > start else end
+    return result
 
-    return chunked_docs
+
+def _recursive_split(
+    text: str,
+    separators: list[str],
+    chunk_size: int,
+) -> list[str]:
+    if len(text) <= chunk_size:
+        return [text]
+
+    if not separators:
+        return _hard_split(text, chunk_size)
+
+    separator = separators[0]
+    pieces = text.split(separator)
+
+    if len(pieces) == 1:
+        return _recursive_split(text, separators[1:], chunk_size)
+
+    result: list[str] = []
+
+    for piece in pieces:
+        piece = piece.strip()
+
+        if not piece:
+            continue
+
+        if len(piece) <= chunk_size:
+            result.append(piece)
+        else:
+            result.extend(
+                _recursive_split(piece, separators[1:], chunk_size)
+            )
+
+    return result
+
+
+def _hard_split(text: str, chunk_size: int) -> list[str]:
+    return [
+        text[start : start + chunk_size]
+        for start in range(0, len(text), chunk_size)
+    ]
+
+
+def _tail_overlap(text: str, overlap: int) -> str:
+    if not text or overlap <= 0:
+        return ""
+
+    tail = text[-overlap:]
+
+    match = re.search(r"\s", tail)
+
+    if match:
+        tail = tail[match.end() :]
+
+    return tail.strip()
